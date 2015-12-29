@@ -78,24 +78,6 @@ fn map_both<T, U, F>(res: Result<T, T>, op: F) -> Result<U, U>
     }
 }
 
-// trait ResultMapExt<T> {
-//     fn map_both<F, U>(self, op: F) -> Result<U, Error<U>>
-//         where F: FnMut(T) -> U;
-// }
-
-// impl<T> ResultMapExt<T> for Result<T, Error<T>> {
-//     fn map_both<F, U>(self, op: F) -> Result<U, Error<U>>
-//         where F: FnMut(T) -> U
-//     {
-//         self.map(op).map_err(|Error { report: rep, poison: p }| {
-//             Error {
-//                 report: rep,
-//                 poison: p.map(op)
-//             }
-//         })
-//     }
-// }
-
 /// Helper type for functions scanning string and char literals.
 enum ScannedChar {
     Eof,    // EOF was reached
@@ -166,6 +148,19 @@ impl<'a> Tokenizer<'a> {
         tok
     }
 
+    /// Tells the tokenizer to fetch the next token from the source.
+    ///
+    /// The function returns
+    /// - `Ok(None)` if EOF was reached and no lexing error occured
+    /// - `Ok(Some(_))` if there was a next token and no lexing error occured
+    /// - `Err(_)` if a lexing error occured (invalid source code)
+    ///
+    /// The error value might contain a poisened token which can be used to
+    /// proceed "normally". However, it is not advised to really proceed
+    /// normally: usually lexing error results in an ill formed token stream,
+    /// which in turn will result in parsing errors. These parsing errors
+    /// will look strange to the user, since the tokens the parser works with
+    /// are only recovered/poisened.
     pub fn next_token(&mut self) -> Result<Option<TokenSpan>, TokenSpan> {
         let res = self.next_token_inner();
         match self.bump_err.take() {
@@ -311,24 +306,12 @@ impl<'a> Tokenizer<'a> {
 
             // Literals
             '"' => {
-                self.scan_string_literal()
-                    .map(|s| Token::Literal(Lit::Str(s)))
-                    .map_err(|Error { report: rep, poison: p }| {
-                        Error {
-                            report: rep,
-                            poison: p.map(|s| Token::Literal(Lit::Str(s)))
-                        }
-                    })
+                map_both(self.scan_string_literal(),
+                    |s| Token::Literal(Lit::Str(s)))
             },
             '\'' => {
-                self.scan_char_literal()
-                    .map(|s| Token::Literal(Lit::Char(s)))
-                    .map_err(|Error { report: rep, poison: p }| {
-                        Error {
-                            report: rep,
-                            poison: p.map(|s| Token::Literal(Lit::Char(s)))
-                        }
-                    })
+                map_both(self.scan_char_literal(),
+                    |c| Token::Literal(Lit::Char(c)))
             },
             '0' ... '9' => self.scan_number_literal()
                                .map(|l| Token::Literal(l))

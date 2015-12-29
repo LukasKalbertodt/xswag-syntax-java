@@ -2,3 +2,7 @@
 name = "xswag-syntax-java"
 version = "0.1.0"
 authors = ["Lukas Kalbertodt <lukas.kalbertodt@gmail.com>"]
+
+[dependencies.xswag-base]
+git = "https://github.com/LukasKalbertodt/xswag-base"
+branch = "pre-rel"
