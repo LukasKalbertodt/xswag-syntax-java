@@ -34,7 +34,7 @@ use base::diag;
 use std::iter::Iterator;
 use std::str::Chars;
 use std::str::FromStr;
-use token::*;
+use super::token::*;
 
 /// Type returned by the Tokenizer in case of a lexing error. Contains a
 /// detailed report and may contain poisoned token that could be used to
@@ -176,7 +176,7 @@ impl<'a> Tokenizer<'a> {
     // Private helper methods
     // =======================================================================
     fn next_token_inner(&mut self) -> Result<Option<TokenSpan>, TokenSpan> {
-                self.token_start = self.curr_pos;
+        self.token_start = self.curr_pos;
         let p = self.peek.unwrap_or('\0');
 
         let curr = match self.curr {
@@ -432,7 +432,7 @@ impl<'a> Tokenizer<'a> {
                         Span {
                             lo: self.peek_pos,
                             hi: self.peek_pos +
-                                    BytePos(pos_offset - 1 + num_digits),
+                                    BytePos(pos_offset + num_digits),
                         }
                     ));
                     // ... but ignore the wrong unicode escape (POISON).
@@ -457,8 +457,7 @@ impl<'a> Tokenizer<'a> {
                                     scalar value)",
                                 Span {
                                     lo: self.peek_pos,
-                                    hi: self.peek_pos +
-                                            BytePos(pos_offset - 1 + 4),
+                                    hi: self.peek_pos + BytePos(pos_offset + 4),
                                 }
                             ));
                             self.peek_pos.0 += pos_offset + 4;
@@ -491,7 +490,7 @@ impl<'a> Tokenizer<'a> {
     fn curr_span(&self) -> Span {
         Span {
             lo: self.token_start,
-            hi: self.peek_pos,
+            hi: self.curr_pos,
         }
     }
 
