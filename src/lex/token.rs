@@ -81,6 +81,7 @@ macro_rules! from_str {
 /// A token with it's span in the source text
 #[derive(Debug, Clone, PartialEq)]
 pub struct TokenSpan {
+    /// The token
     pub tok: Token,
     /// Byte position of token in Filemap
     pub span: Span,
@@ -267,6 +268,7 @@ impl Display for Token {
 }
 
 gen_enum! {
+    /// Represents one of the Java keywords
     #[derive(Copy, Clone, PartialEq, Eq, Debug)]
     pub enum Keyword;
     with to_java_string, display, from_str for:
@@ -323,12 +325,36 @@ gen_enum! {
     While = "while"
 }
 
+/// A Java literal
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Lit {
+    /// String literal, e.g. `"hi"`
     Str(String),
+    /// Char literal, e.g. `'x'`
     Char(char),
-    Integer { raw: String, is_long: bool, radix: u8 },
-    Float { raw: String, is_double: bool, radix: u8, exp: String },
+    /// Integer literal, e.g. `0x27l`
+    Integer {
+        /// Literal as occured in source code (without type suffix and radix
+        /// indicators)
+        raw: String,
+        /// If `l` type suffix was used.
+        is_long: bool,
+        /// Detected radix
+        radix: u8
+    },
+    /// Floating point literal, e.g. `3.14e3f`
+    Float {
+        /// Float number without radix indicators
+        raw: String,
+        /// If the `f` was NOT used
+        is_double: bool,
+        /// Detected radix
+        radix: u8,
+        /// Exponent part without type suffix
+        exp: String
+    },
+    /// Null literal `null`
     Null,
+    /// Boolean literal `true` or `false`
     Bool(bool),
 }

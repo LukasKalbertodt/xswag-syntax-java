@@ -41,11 +41,19 @@ use super::token::*;
 /// proceed normally.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Error<P> {
+    /// Detailed information about the error. Intended for user-friendly
+    /// compiler messages.
     pub report: diag::Report,
+    /// If an error occured but the lexer is able to recover, it emits a token.
+    /// This token will probably contain some "wrong" information. For example:
+    /// the java code `'\j'` contains a character literal with a wrong escape
+    /// code. In this case the error contains a poisened token "Char(j)". So
+    /// the backslash is ignored in order to get some semi usable token.
     pub poison: Option<P>,
 }
 
 impl<P> Error<P> {
+    /// Returns a new version with a changed poison
     pub fn map_poison<F, U>(self, op: F) -> Error<U>
         where F: FnOnce(P) -> U
     {
@@ -55,6 +63,7 @@ impl<P> Error<P> {
         }
     }
 
+    /// Returns a new version with a changed report
     pub fn map_report<F>(self, op: F) -> Error<P>
         where F: FnOnce(diag::Report) -> diag::Report
     {
@@ -86,14 +95,12 @@ enum ScannedChar {
     InvalidEscape(char),    // invalid escape with fallback
 }
 
-/// The Java Tokenizer.
+/// The Java Tokenizer
 ///
 /// This type takes the Java source code as string and produces a sequence of
 /// `Token`s. It reads the source string from front to back only once. During
 /// tokenization it will also detect newline characters and notifies the
 /// filemap about them.
-///
-/// It implements the `Iterator` trait, yielding `TokenSpan`s.
 pub struct Tokenizer<'a> {
     /// Filemap containing the whole source code
     fmap: &'a FileMap,
@@ -127,8 +134,7 @@ impl<'a> Tokenizer<'a> {
     // =======================================================================
     // Public methods of the Tokenizer
     // =======================================================================
-    /// Creates a new Tokenizer with a reference to a filemap and to an error
-    /// handler to report errors.
+    /// Creates and initializes a new Tokenizer with a reference to a filemap.
     pub fn new(fmap: &'a FileMap) -> Tokenizer<'a> {
         let mut tok = Tokenizer {
             chs: fmap.src.chars(),
@@ -150,7 +156,8 @@ impl<'a> Tokenizer<'a> {
 
     /// Tells the tokenizer to fetch the next token from the source.
     ///
-    /// The function returns
+    /// The function returns...
+    ///
     /// - `Ok(None)` if EOF was reached and no lexing error occured
     /// - `Ok(Some(_))` if there was a next token and no lexing error occured
     /// - `Err(_)` if a lexing error occured (invalid source code)
@@ -700,7 +707,7 @@ impl<'a> Tokenizer<'a> {
                 }
             },
             ScannedChar::InvalidEscape(c) => {
-                Err(self.simple_error('\0',
+                Err(self.simple_error(c,
                         format!("invalid escape character `\\{}`", c)
                     ).map_report(|r| r.with_note("valid escape characters are \
                         \\b \\t \\n \\f \\r \\\" \\' \\\\ or octal escapes"
