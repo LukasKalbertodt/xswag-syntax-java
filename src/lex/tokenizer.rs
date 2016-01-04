@@ -101,6 +101,8 @@ enum ScannedChar {
 /// `Token`s. It reads the source string from front to back only once. During
 /// tokenization it will also detect newline characters and notifies the
 /// filemap about them.
+///
+/// This type also implements the `Iterator` trait for convenience.
 pub struct Tokenizer<'a> {
     /// Filemap containing the whole source code
     fmap: &'a FileMap,
@@ -168,26 +170,27 @@ impl<'a> Tokenizer<'a> {
     /// which in turn will result in parsing errors. These parsing errors
     /// will look strange to the user, since the tokens the parser works with
     /// are only recovered/poisened.
-    pub fn next_token(&mut self) -> Result<Option<TokenSpan>, TokenSpan> {
+    pub fn next_token(&mut self) -> Option<Result<TokenSpan, TokenSpan>> {
         let res = self.next_token_inner();
         match self.bump_err.take() {
             None => res,
-            Some(rep) => Err(Error {
+            Some(rep) => Some(Err(Error {
                 report: rep,
-                poison: res.unwrap_or_else(|e| e.poison)
-            })
+                poison: res.and_then(|r| r.map(|o| Some(o))
+                                          .unwrap_or_else(|e| e.poison))
+            }))
         }
     }
 
     // =======================================================================
     // Private helper methods
     // =======================================================================
-    fn next_token_inner(&mut self) -> Result<Option<TokenSpan>, TokenSpan> {
+    fn next_token_inner(&mut self) -> Option<Result<TokenSpan, TokenSpan>> {
         self.token_start = self.curr_pos;
         let p = self.peek.unwrap_or('\0');
 
         let curr = match self.curr {
-            None => return Ok(None),
+            None => return None,
             Some(c) => c,
         };
 
@@ -332,13 +335,13 @@ impl<'a> Tokenizer<'a> {
 
             // If you reach this: congratz!
             _ => {
-                return Err(Error {
+                return Some(Err(Error {
                     report: diag::Report::simple_error(
                         "illegal character in this context",
                         self.curr_span()
                     ),
                     poison: None,
-                })
+                }))
             },
         };
 
@@ -347,8 +350,8 @@ impl<'a> Tokenizer<'a> {
             span: self.curr_span(),
         };
 
-        res.map(|tok| Some(add_span(tok)))
-           .map_err(|e| e.map_poison(|tok| add_span(tok)))
+        Some(res.map(|t| add_span(t))
+              .map_err(|e| e.map_poison(|tok| add_span(tok))))
     }
 
     /// Reads a new char from the iterator, updating last, curr and peek + pos.
@@ -940,147 +943,13 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
-// impl<'a> Iterator for Tokenizer<'a> {
-//     type Item = TokenSpan;
+impl<'a> Iterator for Tokenizer<'a> {
+    type Item = Result<TokenSpan, TokenSpan>;
 
-//     fn next(&mut self) -> Option<TokenSpan> {
-//         self.token_start = self.curr_pos;
-//         let p = self.peek.unwrap_or('\0');
-
-//         let curr = match self.curr {
-//             None => return None,
-//             Some(c) => c,
-//         };
-
-//         let t = match curr {
-//             // non-real tokens: whitespace and comments
-//             c if is_java_whitespace(c) => {
-//                 self.skip_whitespace();
-//                 Token::Whitespace
-//             },
-//             '/' if p == '/' || p == '*' => {
-//                 self.skip_comment();
-//                 Token::Comment
-//             },
-
-//             // Java separators, ':' and float literals
-//             '(' => { self.bump(); Token::ParenOp },
-//             ')' => { self.bump(); Token::ParenCl },
-//             '{' => { self.bump(); Token::BraceOp },
-//             '}' => { self.bump(); Token::BraceCl },
-//             '[' => { self.bump(); Token::BracketOp },
-//             ']' => { self.bump(); Token::BracketCl },
-//             ';' => { self.bump(); Token::Semi },
-//             ',' => { self.bump(); Token::Comma },
-//             '.' => {
-//                 // it might be the start of a float literal
-//                 match p {
-//                     '0' ... '9' => Token::Literal(self.scan_number_literal()),
-//                     _ => {
-//                         self.bump();
-//                         if p == '.' && self.peek == Some('.') {
-//                             self.dbump();
-//                             Token::DotDotDot
-//                         } else {
-//                             Token::Dot
-//                         }
-//                     }
-//                 }
-//             },
-//             '@' => { self.bump(); Token::At },
-//             ':' if p == ':' => { self.dbump(); Token::ColonSep },
-//             ':' => { self.bump(); Token::Colon },
-
-//             // Operators  ==  =  >>>=  >>>  >>=  >>  >=  >  <<=  <<  <=  <
-//             '=' if p == '=' => { self.dbump(); Token::EqEq },
-//             '=' => { self.bump(); Token::Eq },
-//             '>' if p == '>' => {
-//                 self.dbump();
-//                 match self.curr.unwrap_or('\0') {
-//                     '>' => {
-//                         self.bump();
-//                         if self.curr == Some('=') {
-//                             self.bump();
-//                             Token::ShrUnEq
-//                         } else {
-//                             Token::ShrUn
-//                         }
-//                     },
-//                     '=' => {
-//                         self.bump();
-//                         Token::ShrEq
-//                     }
-//                     _ =>  {
-//                         Token::Shr
-//                     }
-//                 }
-//             },
-//             '>' if p == '=' => { self.dbump(); Token::Ge },
-//             '>' => { self.bump(); Token::Gt },
-//             '<' if p == '<' => {
-//                 self.dbump();
-//                 if self.curr == Some('=') {
-//                     self.bump();
-//                     Token::ShlEq
-//                 } else {
-//                     Token::Shl
-//                 }
-//             },
-//             '<' if p == '=' => { self.dbump(); Token::Le },
-//             '<' => { self.bump(); Token::Lt },
-
-//             // Operators  !=  !  ~  ?
-//             '!' if p == '=' => { self.dbump(); Token::Ne },
-//             '!' => { self.bump(); Token::Bang },
-//             '~' => { self.bump(); Token::Tilde },
-//             '?' => { self.bump(); Token::Question },
-
-//             // Operators  +=  ++  +  -=  ->  --  -  &=  &&  &  |=  ||  |
-//             '+' if p == '=' => { self.dbump(); Token::PlusEq },
-//             '+' if p == '+' => { self.dbump(); Token::PlusPlus },
-//             '+' => { self.bump(); Token::Plus },
-//             '-' if p == '=' => { self.dbump(); Token::MinusEq },
-//             '-' if p == '>' => { self.dbump(); Token::Arrow },
-//             '-' if p == '-' => { self.dbump(); Token::MinusMinus },
-//             '-' => { self.bump(); Token::Minus },
-//             '&' if p == '=' => { self.dbump(); Token::AndEq },
-//             '&' if p == '&' => { self.dbump(); Token::AndAnd },
-//             '&' => { self.bump(); Token::And },
-//             '|' if p == '=' => { self.dbump(); Token::OrEq },
-//             '|' if p == '|' => { self.dbump(); Token::OrOr },
-//             '|' => { self.bump(); Token::Or },
-
-//             // Operators  *=  *  /=  /  %=  %  ^=  ^
-//             '*' if p == '=' => { self.dbump(); Token::StarEq },
-//             '*' => { self.bump(); Token::Star },
-//             '/' if p == '=' => { self.dbump(); Token::SlashEq },
-//             '/' => { self.bump(); Token::Slash },
-//             '^' if p == '=' => { self.dbump(); Token::CaretEq },
-//             '^' => { self.bump(); Token::Caret },
-//             '%' if p == '=' => { self.dbump(); Token::PercentEq },
-//             '%' => { self.bump(); Token::Percent },
-
-//             // Literals
-//             '"' => Token::Literal(Lit::Str(self.scan_string_literal())),
-//             '\'' => Token::Literal(Lit::Char(self.scan_char_literal())),
-//             '0' ... '9' => Token::Literal(self.scan_number_literal()),
-
-//             // identifier, keyword, bool- or null-literal
-//             c if is_java_ident_start(c) => {
-//                 self.scan_word()
-//             },
-//             _ => {
-//                 self.fatal_span("illegal character in this context");
-//                 return None;
-//             },
-//         };
-
-//         Some(TokenSpan {
-//             tok: t,
-//             span: Span { lo: self.token_start, hi: self.last_pos },
-//         })
-//     }
-// }
+    fn next(&mut self) -> Option<Result<TokenSpan, TokenSpan>> {
+        self.next_token()
+    }
+}
 
 // ===========================================================================
 // A bunch of helper functions

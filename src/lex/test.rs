@@ -8,26 +8,16 @@ use base::code::{FileMap, Span, BytePos};
 use base::diag;
 use std::rc::Rc;
 
-fn raw_toks(src: &str) -> Vec<Result<Option<TokenSpan>, TokenSpan>> {
+fn raw_toks(src: &str) -> Vec<Result<TokenSpan, TokenSpan>> {
     let fmap = Rc::new(FileMap::new("<unit-test>", src));
     let mut lexer = Tokenizer::new(&fmap);
-    let mut toks = Vec::new();
-    loop {
-        let res = lexer.next_token();
-        if res == Ok(None) { break; }
-        toks.push(res);
-    }
-    toks
+    lexer.collect()
 }
 
 fn spans(src: &str) -> Vec<TokenSpan> {
     let fmap = Rc::new(FileMap::new("<unit-test>", src));
     let mut lexer = Tokenizer::new(&fmap);
-    let mut toks = Vec::new();
-    while let Ok(Some(ts)) = lexer.next_token() {
-        toks.push(ts);
-    }
-    toks
+    lexer.take_while(|t| t.is_ok()).map(|t| t.unwrap()).collect()
 }
 
 fn toks(src: &str) -> Vec<Token> {
