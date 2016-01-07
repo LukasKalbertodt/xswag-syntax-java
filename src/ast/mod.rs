@@ -68,7 +68,7 @@ pub enum Import {
     Wildcard(Name),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Visibility {
     Public,
     Protected,
@@ -103,6 +103,16 @@ java_enum! (Modifier {
     Transient => "transient",
     Volatile => "volatile",
 });
+
+#[derive(Debug, Clone)]
+pub struct Field {
+    pub vis: Visibility,
+    pub static_: bool,
+    pub final_: bool,
+    pub ty: String,
+    pub name: String,
+    // pub init ...
+}
 
 #[derive(Debug, Clone)]
 pub struct Method {

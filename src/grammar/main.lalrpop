@@ -1,0 +1,302 @@
+use ast;
+use lex::{Token, Keyword};
+use base::code::{BytePos, Span};
+use base::diag::Report;
+use lalrpop_util::ParseError;
+
+grammar(errors: &mut Vec<Report>);
+
+extern {
+    type Location = BytePos;
+    type Error = Report;
+
+    enum Token {
+        // Variants of the Java-*Token*
+        Ident => Token::Ident(<String>),
+        // Literal(Lit),
+
+        // Keywords
+        "abstract" => Token::KeyW(Keyword::Abstract),
+        "assert" => Token::KeyW(Keyword::Assert),
+        "boolean" => Token::KeyW(Keyword::Boolean),
+        "break" => Token::KeyW(Keyword::Break),
+        "byte" => Token::KeyW(Keyword::Byte),
+        "case" => Token::KeyW(Keyword::Case),
+        "catch" => Token::KeyW(Keyword::Catch),
+        "char" => Token::KeyW(Keyword::Char),
+        "class" => Token::KeyW(Keyword::Class),
+        "const" => Token::KeyW(Keyword::Const),
+        "continue" => Token::KeyW(Keyword::Continue),
+        "default" => Token::KeyW(Keyword::Default),
+        "do" => Token::KeyW(Keyword::Do),
+        "double" => Token::KeyW(Keyword::Double),
+        "else" => Token::KeyW(Keyword::Else),
+        "enum" => Token::KeyW(Keyword::Enum),
+        "extends" => Token::KeyW(Keyword::Extends),
+        "final" => Token::KeyW(Keyword::Final),
+        "finally" => Token::KeyW(Keyword::Finally),
+        "float" => Token::KeyW(Keyword::Float),
+        "for" => Token::KeyW(Keyword::For),
+        "if" => Token::KeyW(Keyword::If),
+        "goto" => Token::KeyW(Keyword::Goto),
+        "implements" => Token::KeyW(Keyword::Implements),
+        "import" => Token::KeyW(Keyword::Import),
+        "instanceof" => Token::KeyW(Keyword::Instanceof),
+        "int" => Token::KeyW(Keyword::Int),
+        "interface" => Token::KeyW(Keyword::Interface),
+        "long" => Token::KeyW(Keyword::Long),
+        "native" => Token::KeyW(Keyword::Native),
+        "new" => Token::KeyW(Keyword::New),
+        "package" => Token::KeyW(Keyword::Package),
+        "private" => Token::KeyW(Keyword::Private),
+        "protected" => Token::KeyW(Keyword::Protected),
+        "public" => Token::KeyW(Keyword::Public),
+        "return" => Token::KeyW(Keyword::Return),
+        "short" => Token::KeyW(Keyword::Short),
+        "static" => Token::KeyW(Keyword::Static),
+        "strictfp" => Token::KeyW(Keyword::Strictfp),
+        "super" => Token::KeyW(Keyword::Super),
+        "switch" => Token::KeyW(Keyword::Switch),
+        "synchronized" => Token::KeyW(Keyword::Synchronized),
+        "this" => Token::KeyW(Keyword::This),
+        "throw" => Token::KeyW(Keyword::Throw),
+        "throws" => Token::KeyW(Keyword::Throws),
+        "transient" => Token::KeyW(Keyword::Transient),
+        "try" => Token::KeyW(Keyword::Try),
+        "void" => Token::KeyW(Keyword::Void),
+        "volatile" => Token::KeyW(Keyword::Volatile),
+        "while" => Token::KeyW(Keyword::While),
+
+        // Variants of Java-*Seperator*
+        // (   )   {   }   [   ]   ;   ,   .   ...   @   ::
+        "(" => Token::ParenOp,
+        ")" => Token::ParenCl,
+        "{" => Token::BraceOp,
+        "}" => Token::BraceCl,
+        "[" => Token::BracketOp,
+        "]" => Token::BracketCl,
+        ";" => Token::Semi,
+        "," => Token::Comma,
+        "." => Token::Dot,
+        "..." => Token::DotDotDot,
+        "@" => Token::At,
+        "::" => Token::ColonSep,
+
+        // Variants of Java-*Operator*
+        "=" => Token::Eq,
+        ">" => Token::Gt,
+        "<" => Token::Lt,
+        "!" => Token::Bang,
+        "~" => Token::Tilde,
+        "?" => Token::Question,
+        ":" => Token::Colon,
+        "->" => Token::Arrow,
+
+        "==" => Token::EqEq,
+        ">=" => Token::Ge,
+        "<=" => Token::Le,
+        "!=" => Token::Ne,
+        "&&" => Token::AndAnd,
+        "||" => Token::OrOr,
+        "++" => Token::PlusPlus,
+        "--" => Token::MinusMinus,
+
+        "+" => Token::Plus,
+        "-" => Token::Minus,
+        "*" => Token::Star,
+        "/" => Token::Slash,
+        "&" => Token::And,
+        "|" => Token::Or,
+        "^" => Token::Caret,
+        "%" => Token::Percent,
+        "<<" => Token::Shl,
+        ">>" => Token::Shr,
+        ">>>" => Token::ShrUn,
+
+        "+=" => Token::PlusEq,
+        "-=" => Token::MinusEq,
+        "*=" => Token::StarEq,
+        "/=" => Token::SlashEq,
+        "&=" => Token::AndEq,
+        "|=" => Token::OrEq,
+        "^=" => Token::CaretEq,
+        "%=" => Token::PercentEq,
+        "<<=" => Token::ShlEq,
+        ">>=" => Token::ShrEq,
+        ">>>=" => Token::ShrUnEq,
+    }
+}
+
+pub CompilationUnit = NormalClassDecl;
+
+// 8.1 ClassDeclaration TODO
+ClassDecl = {
+    NormalClassDecl,
+    // EnumDecl,
+};
+
+// 8.1 NormalClassDeclaration TODO
+NormalClassDecl: ast::Class = {
+    <modifier:ClassModifier*> "class" <l:@L> <class_name: Ident> <r:@R> ClassBody =>? {
+        // check modifier
+        Ok(ast::Class {
+            name: ast::Ident { name: class_name, span: Span {
+                lo: l,
+                hi: r,
+            }},
+            vis: ast::Visibility::Public,
+            methods: vec![],
+        })
+    }
+};
+
+// 8.1.1 TODO
+ClassModifier = {
+    "public",
+    "protected",
+    "private",
+    "abstract",
+    "static",
+    "final",
+    "strictfp"
+};
+
+// 8.1.6
+ClassBody = "{" ClassBodyDecl* "}";
+
+// 8.1.6 TODO
+ClassBodyDecl = {
+    ClassMemberDecl,
+    // TODO: ...
+};
+
+// 8.1.6 TODO
+ClassMemberDecl = {
+    FieldDecl,
+    // MethodDecl,
+    // ClassDecl,
+    // InterfaceDecl,
+};
+
+// 8.3 TODO
+FieldDecl: Vec<ast::Field> = {
+    <mods: (<@L> <FieldModifier> <@R>)*>
+    <ty: UnannType> <decls: VariableDeclaratorList> ";"
+        =>? {
+        // unwrap keywords from token
+        let mods: Vec<_> = mods.iter().map(|&(lo, ref t, hi)|
+            (
+                if let &Token::KeyW(m) = t { m } else { unreachable!() },
+                Span {lo: lo, hi: hi }
+            )
+        ).collect();
+
+        // check modifier
+        let mut vis = ast::Visibility::Package;
+        let mut first_vis = None;
+        let mut static_ = false;
+        let mut final_ = false;
+
+        for &(m, span) in &mods {
+            match m {
+                Keyword::Public | Keyword::Private | Keyword::Protected => {
+                    // check if there was a visibility modifier before this one
+                    if let Some(prev_span) = first_vis {
+                        let e = Report::simple_error(
+                            "duplicate visibility modifier",
+                            span
+                        ).with_span_note(
+                            "the first visibility modifier is already here",
+                            prev_span
+                        );
+                        errors.push(e);
+                    } else {
+                        first_vis = Some(span);
+                        vis = match m {
+                            Keyword::Public => ast::Visibility::Public,
+                            Keyword::Private => ast::Visibility::Private,
+                            Keyword::Protected => ast::Visibility::Protected,
+                            _ => unreachable!(),
+                        };
+                    }
+                },
+                Keyword::Static => {
+                    if static_ {
+                        let e = Report::simple_error(
+                            "duplicate `static` modifier",
+                            span
+                        ).with_span_note(
+                            "the modifier is already set here",
+                            mods.iter()
+                                .find(|&&(m, span)| m == Keyword::Static)
+                                .map(|&(_, span)| span).unwrap()
+                        );
+                        errors.push(e);
+                    } else {
+                        static_ = true;
+                    }
+                },
+                Keyword::Final => {
+                    if final_ {
+                        let e = Report::simple_error(
+                            "duplicate `final` modifier",
+                            span
+                        ).with_span_note(
+                            "the modifier is already set here",
+                            mods.iter()
+                                .find(|&&(m, span)| m == Keyword::Final)
+                                .map(|&(_, span)| span).unwrap()
+                        );
+                        errors.push(e);
+                    } else {
+                        final_ = true;
+                    }
+                },
+                _ => {},
+            }
+        }
+
+        decls.into_iter().map(|decl| {
+            let mut f = ast::Field {
+                vis: vis,
+                static_: static_,
+                final_: final_,
+                ty: "<TODO>".into(),
+                name: decl,
+            };
+            Ok(f)
+        }).collect()
+    }
+};
+
+FieldModifier = {
+    "public",
+    "protected",
+    "private",
+    "static",
+    "final",
+};
+
+UnannType = "%";
+
+VariableDeclaratorList = Comma<VariableDeclarator>;
+
+VariableDeclarator = {
+    // VariableDeclaratorId ("=" <VariableInitializer>)?
+    VariableDeclaratorId
+};
+
+VariableDeclaratorId = {
+    // <id: Ident> <dims: Dims?>;
+    Ident
+};
+
+VariableInitializer = "~";
+
+Comma<T>: Vec<T> = {
+    <head: T> <tail: (<T> ",")*> => {
+        let mut v = tail;
+        v.push(head);
+        v
+    }
+};
