@@ -33,7 +33,7 @@ macro_rules! java_enum { (
 // A Java compilation unit: "File that contains one class"
 #[derive(Debug, Clone)]
 pub struct CompilationUnit {
-    pub items: Vec<Item>,
+    pub classes: Vec<Class>,
 }
 
 #[derive(Debug, Clone)]
@@ -81,6 +81,7 @@ pub struct Class {
     pub name: Ident,
     pub vis: Visibility,
     pub methods: Vec<Method>,
+    pub fields: Vec<Field>,
 }
 
 #[derive(Debug, Clone)]

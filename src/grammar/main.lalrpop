@@ -127,7 +127,11 @@ extern {
     }
 }
 
-pub CompilationUnit = NormalClassDecl;
+pub CompilationUnit: ast::CompilationUnit = {
+    NormalClassDecl* => ast::CompilationUnit {
+        classes: <>
+    }
+};
 
 // 8.1 ClassDeclaration TODO
 ClassDecl = {
@@ -137,7 +141,9 @@ ClassDecl = {
 
 // 8.1 NormalClassDeclaration TODO
 NormalClassDecl: ast::Class = {
-    <modifier:ClassModifier*> "class" <l:@L> <class_name: Ident> <r:@R> ClassBody =>? {
+    <modifier:ClassModifier*>
+    "class" <l:@L> <class_name: Ident> <r:@R>
+    <body: ClassBody> =>? {
         // check modifier
         Ok(ast::Class {
             name: ast::Ident { name: class_name, span: Span {
@@ -146,6 +152,7 @@ NormalClassDecl: ast::Class = {
             }},
             vis: ast::Visibility::Public,
             methods: vec![],
+            fields: body,
         })
     }
 };
@@ -162,7 +169,11 @@ ClassModifier = {
 };
 
 // 8.1.6
-ClassBody = "{" ClassBodyDecl* "}";
+ClassBody: Vec<ast::Field> = {
+    "{" <ClassBodyDecl*> "}" => {
+        <>.into_iter().flat_map(|v| v.into_iter()).collect()
+    }
+};
 
 // 8.1.6 TODO
 ClassBodyDecl = {
@@ -257,7 +268,7 @@ FieldDecl: Vec<ast::Field> = {
         }
 
         decls.into_iter().map(|decl| {
-            let mut f = ast::Field {
+            let f = ast::Field {
                 vis: vis,
                 static_: static_,
                 final_: final_,

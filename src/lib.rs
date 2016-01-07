@@ -5,27 +5,26 @@ pub mod lex;
 pub mod ast;
 pub mod grammar;
 
+use base::diag::Report;
+use lalrpop_util::ParseError;
 
-pub fn play() {
-    // println!("{:#?}",
-    //     grammar::import::parse_SingleTypeImportDecl("import peter"));
-    // println!("{:#?}",
-    //     grammar::import::parse_SingleTypeImportDecl("import Peter"));
-    // let toks = vec![grammar::Tokis::Outer, grammar::Tokis::Outer,
-    //     grammar::Tokis::Inner, grammar::Tokis::Outer, grammar::Tokis::Outer];
-    let toks = vec![lex::Token::BraceOp, lex::Token::KeyW(lex::Keyword::Public), lex::Token::BraceCl];
-
-    let file = base::code::FileMap::new("<test>",
-        "public private class Cheese { private public public % yolo; }"
-    );
-    let lexer = lex::Tokenizer::new(&file)
+pub fn parse_compilation_unit(file: &base::code::FileMap)
+    -> (Result<ast::CompilationUnit, Report>, Vec<Report>)
+{
+    // Stop at the first lexing error and remove all non real token for parsing
+    let lexer = lex::Tokenizer::new(file)
         .take_while(|res| res.is_ok())
         .map(|res| { let ts = res.unwrap(); (ts.span.lo, ts.tok, ts.span.hi) })
         .filter(|t| t.1.is_real());
 
     let mut errors = Vec::new();
 
-    println!("{:#?}", grammar::main::parse_CompilationUnit(&mut errors, lexer));
-    println!("{:#?}", errors);
-    // println!("{:?}", grammar::main::parse_CompilationUnit(toks.into_iter()));
+    let res = grammar::main::parse_CompilationUnit(&mut errors, lexer);
+    let res = res.map_err(|e| match e {
+        ParseError::User { error: e } => e,
+        // TODO: this is stupid
+        le @ _ => Report::simple_error(format!("lalrpop: {:?}", le),
+            base::code::Span::dummy()),
+    });
+    (res, errors)
 }
