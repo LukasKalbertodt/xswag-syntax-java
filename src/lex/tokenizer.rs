@@ -139,7 +139,7 @@ impl<'a> Tokenizer<'a> {
     /// Creates and initializes a new Tokenizer with a reference to a filemap.
     pub fn new(fmap: &'a FileMap) -> Tokenizer<'a> {
         let mut tok = Tokenizer {
-            chs: fmap.src.chars(),
+            chs: fmap.src().chars(),
             fmap: fmap,
             last: None,
             curr: None,

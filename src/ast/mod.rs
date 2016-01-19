@@ -29,10 +29,34 @@ macro_rules! java_enum { (
     }
 }}
 
+// ============================================================================
+// Definition of types that are common in AST nodes
+// ============================================================================
+#[derive(Debug, Clone)]
+pub struct Ident {
+    pub name: String,
+    pub span: Span,
+}
 
-// A Java compilation unit: "File that contains one class"
+#[derive(Debug, Clone)]
+pub struct Path {
+    pub segments: Vec<Ident>,
+}
+
+// pub struct PathSegment {
+
+// }
+
+
+
+// ============================================================================
+// Top-Down AST definition starting with the goal symbol
+// ============================================================================
+/// A Java compilation unit. This is the goal symbol for the syntactic grammar.
 #[derive(Debug, Clone)]
 pub struct CompilationUnit {
+    pub package: Option<Path>,
+    pub imports: (),
     pub classes: Vec<Class>,
 }
 
@@ -43,12 +67,6 @@ pub enum Item {
     Method(Box<Method>),
 }
 
-
-#[derive(Debug, Clone)]
-pub struct Ident {
-    pub name: String,
-    pub span: Span,
-}
 
 impl Default for Ident {
     fn default() -> Self {
@@ -111,7 +129,7 @@ pub struct Field {
     pub static_: bool,
     pub final_: bool,
     pub ty: String,
-    pub name: String,
+    pub name: Ident,
     // pub init ...
 }
 

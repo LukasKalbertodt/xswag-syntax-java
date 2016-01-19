@@ -12,7 +12,7 @@ extern {
 
     enum Token {
         // Variants of the Java-*Token*
-        Ident => Token::Ident(<String>),
+        Word => Token::Ident(<String>),
         // Literal(Lit),
 
         // Keywords
@@ -127,11 +127,51 @@ extern {
     }
 }
 
-pub CompilationUnit: ast::CompilationUnit = {
-    NormalClassDecl* => ast::CompilationUnit {
-        classes: <>
+
+// ===========================================================================
+// Definition of helper grammars
+// ===========================================================================
+Comma<T>: Vec<T> = {
+    <head: T> <tail: (<T> ",")*> => {
+        let mut v = tail;
+        v.push(head);
+        v
     }
 };
+
+Path: ast::Path = {
+    <head: Ident> <tail: ("." <Ident>)*> => {
+        let mut v = tail;
+        v.push(head);
+        ast::Path {
+            segments: v,
+        }
+    }
+};
+
+Ident: ast::Ident = {
+    <l:@L> <w:Word> <r:@R>  => ast::Ident {
+        name: w,
+        span: Span { lo: l, hi: r },
+     }
+};
+
+
+// ===========================================================================
+// Grammar definitions in a top-down or depth first search order
+// ===========================================================================
+// 7.3 (goal symbol)
+pub CompilationUnit: ast::CompilationUnit = {
+    <package: PackageDecl?> <classes: NormalClassDecl*> => {
+        ast::CompilationUnit {
+            package: package,
+            imports: (),
+            classes: classes
+        }
+    }
+};
+
+PackageDecl = { "package" <Path> ";" };
 
 // 8.1 ClassDeclaration TODO
 ClassDecl = {
@@ -146,10 +186,7 @@ NormalClassDecl: ast::Class = {
     <body: ClassBody> =>? {
         // check modifier
         Ok(ast::Class {
-            name: ast::Ident { name: class_name, span: Span {
-                lo: l,
-                hi: r,
-            }},
+            name: class_name,
             vis: ast::Visibility::Public,
             methods: vec![],
             fields: body,
@@ -303,11 +340,3 @@ VariableDeclaratorId = {
 };
 
 VariableInitializer = "~";
-
-Comma<T>: Vec<T> = {
-    <head: T> <tail: (<T> ",")*> => {
-        let mut v = tail;
-        v.push(head);
-        v
-    }
-};
