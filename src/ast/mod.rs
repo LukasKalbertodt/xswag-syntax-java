@@ -5,6 +5,7 @@ use std::fmt::{Display, Formatter, Error};
 use base::code::{BytePos, Span};
 use std::vec::Vec;
 use std::default::Default;
+use std::fmt;
 
 macro_rules! java_enum { (
     $name:ident { $( $variant:ident => $java_word:expr, )* }
@@ -32,10 +33,18 @@ macro_rules! java_enum { (
 // ============================================================================
 // Definition of types that are common in AST nodes
 // ============================================================================
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Ident {
     pub name: String,
     pub span: Span,
+}
+
+// custom `Debug` impl to shorten debug output and improve readability
+impl fmt::Debug for Ident {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, r#"Ident("{}" @ ({}, {}))"#,
+            self.name, self.span.lo.0, self.span.hi.0)
+    }
 }
 
 #[derive(Debug, Clone)]
