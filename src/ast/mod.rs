@@ -56,7 +56,7 @@ pub struct Path {
 #[derive(Debug, Clone)]
 pub struct CompilationUnit {
     pub package: Option<Path>,
-    pub imports: (),
+    pub imports: Vec<Import>,
     pub classes: Vec<Class>,
 }
 
@@ -81,9 +81,9 @@ impl Default for Ident {
 #[derive(Debug, Clone)]
 pub enum Import {
     /// e.g. `import IO.AlgoTools;`
-    Single(Name),
+    SingleType(Path),
     /// called "type-import-on-demand" in specs -- e.g. `import IO.*;`
-    Wildcard(Name),
+    TypeOnDemand(Path),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

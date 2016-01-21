@@ -139,6 +139,7 @@ Comma<T>: Vec<T> = {
     }
 };
 
+// #[inline]
 Path: ast::Path = {
     <head: Ident> <tail: ("." <Ident>)*> => {
         let mut v = tail;
@@ -162,16 +163,27 @@ Ident: ast::Ident = {
 // ===========================================================================
 // 7.3 (goal symbol)
 pub CompilationUnit: ast::CompilationUnit = {
-    <package: PackageDecl?> <classes: NormalClassDecl*> => {
+    <package: PackageDecl?>
+    <imports: ImportDecl*>
+    <classes: NormalClassDecl*>
+        =>
+    {
         ast::CompilationUnit {
             package: package,
-            imports: (),
+            imports: imports,
             classes: classes
         }
     }
 };
 
 PackageDecl = { "package" <Path> ";" };
+
+ImportDecl: ast::Import = {
+    "import" <Path> ";" => ast::Import::SingleType(<>),
+    // FIXME: the dash "-" needs to be replaced by "." after I figured out
+    // how to resolve shift-reduce conflicts
+    "import" <Path> "-" "*" ";" => ast::Import::TypeOnDemand(<>),
+};
 
 // 8.1 ClassDeclaration TODO
 ClassDecl = {

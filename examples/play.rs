@@ -1,10 +1,18 @@
 extern crate xswag_syntax_java as syntax;
 extern crate xswag_base as base;
 
+use base::diag;
+
+// FIXME: import is currently wrong
 const SRC: &'static str = "\
 package yolo.swag;
 
-public private class Cheese { private public % yolo; }
+import AlgoTools.IO;
+import java.lang-*;
+
+public private class Cheese {
+	private public % yolo;
+}
 
 
 ";
@@ -14,5 +22,8 @@ fn main() {
     let (res, errors) = syntax::parse_compilation_unit(&file);
 
     println!("{:#?}", res);
-    println!("{:#?}", errors);
+    for e in &errors {
+    	diag::print(&e, &file, diag::PrintOptions::default());
+    }
+    // println!("{:#?}", errors);
 }
