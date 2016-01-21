@@ -6,6 +6,7 @@ pub mod ast;
 pub mod grammar;
 
 use base::diag::Report;
+use base::code::Span;
 use lalrpop_util::ParseError;
 
 pub fn parse_compilation_unit(file: &base::code::FileMap)
@@ -22,9 +23,31 @@ pub fn parse_compilation_unit(file: &base::code::FileMap)
     let res = grammar::main::parse_CompilationUnit(&mut errors, lexer);
     let res = res.map_err(|e| match e {
         ParseError::User { error: e } => e,
-        // TODO: this is stupid
-        le @ _ => Report::simple_error(format!("lalrpop: {:?}", le),
-            base::code::Span::dummy()),
+        ParseError::InvalidToken { location: loc } => {
+            Report::simple_error("lalrpop InvalidToken", Span::single(loc))
+        },
+        ParseError::UnrecognizedToken { token: tok, expected: exp } => {
+            match tok {
+                None => {
+                    Report::simple_error(
+                        "lalrpop UnrecognizedToken ???",
+                        Span::dummy()
+                    )
+                },
+                Some((lo, tok, hi)) => {
+                    Report::simple_error(
+                        format!("lalrpop UnrecognizedToken `{:?}`", tok),
+                        Span { lo: lo, hi: hi }
+                    )
+                }
+            }.with_note(format!("Expected one of {:?}", exp))
+        },
+        ParseError::ExtraToken  { token: (lo, tok, hi) } => {
+            Report::simple_error(
+                format!("lalrpop ExtraToken {:?}", tok),
+                Span { lo: lo, hi: hi }
+            )
+        },
     });
     (res, errors)
 }
