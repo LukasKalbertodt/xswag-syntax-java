@@ -165,29 +165,44 @@ Ident: ast::Ident = {
 pub CompilationUnit: ast::CompilationUnit = {
     <package: PackageDecl?>
     <imports: ImportDecl*>
-    <classes: NormalClassDecl*>
+    <types: TypeDecl*>
         =>
     {
         ast::CompilationUnit {
             package: package,
             imports: imports,
-            classes: classes
+            types: types.into_iter().filter_map(|t| t).collect()
         }
     }
 };
 
+// 7.4
 PackageDecl = { "package" <Path> ";" };
 
+// FIXME: the dash "-" needs to be replaced by "." after I figured out
+// how to resolve shift-reduce conflicts
 ImportDecl: ast::Import = {
     "import" <Path> ";" => ast::Import::SingleType(<>),
-    // FIXME: the dash "-" needs to be replaced by "." after I figured out
-    // how to resolve shift-reduce conflicts
     "import" <Path> "-" "*" ";" => ast::Import::TypeOnDemand(<>),
+    "import" "static" <Path> ";" => ast::Import::SingleStatic(<>),
+    "import" "static" <Path> "-" "*" ";" => ast::Import::StaticOnDemand(<>),
+};
+
+// 7.6
+TypeDecl: Option<ast::Type> = {
+    <ClassDecl> => Some(<>),
+    <InterfaceDecl> => Some(<>),
+    ";" => None
+};
+
+// 9.1 TODO
+InterfaceDecl: ast::Type = {
+    "?" => ast::Type::NormalInterface(()),
 };
 
 // 8.1 ClassDeclaration TODO
-ClassDecl = {
-    NormalClassDecl,
+ClassDecl: ast::Type = {
+    <NormalClassDecl> => ast::Type::NormalClass(<>),
     // EnumDecl,
 };
 

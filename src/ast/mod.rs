@@ -57,7 +57,14 @@ pub struct Path {
 pub struct CompilationUnit {
     pub package: Option<Path>,
     pub imports: Vec<Import>,
-    pub classes: Vec<Class>,
+    pub types: Vec<Type>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Type {
+    NormalClass(Class),
+    Enum(()),
+    NormalInterface(()),
 }
 
 #[derive(Debug, Clone)]
@@ -84,6 +91,8 @@ pub enum Import {
     SingleType(Path),
     /// called "type-import-on-demand" in specs -- e.g. `import IO.*;`
     TypeOnDemand(Path),
+    SingleStatic(Path),
+    StaticOnDemand(Path),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
