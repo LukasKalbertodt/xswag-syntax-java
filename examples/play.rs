@@ -12,7 +12,10 @@ import java.lang-*;
 
 public private class Cheese {
 	private public % yolo;
-}
+};
+
+;
+class Bread {}
 
 
 ";
@@ -21,9 +24,16 @@ fn main() {
     let file = base::code::FileMap::new("<test>", SRC);
     let (res, errors) = syntax::parse_compilation_unit(&file);
 
-    println!("{:#?}", res);
+	match res {
+		Ok(ast) => print!("{:#?}", ast),
+		Err(e) => {
+			// println!("{:#?}", e);
+			diag::print(&e, &file, diag::PrintOptions::default());
+		}
+	}
     for e in &errors {
     	diag::print(&e, &file, diag::PrintOptions::default());
     }
+    // println!("{:#?}", res);
     // println!("{:#?}", errors);
 }
