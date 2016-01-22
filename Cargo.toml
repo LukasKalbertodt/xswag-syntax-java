@@ -9,7 +9,7 @@ git = "https://github.com/LukasKalbertodt/xswag-base"
 branch = "pre-rel"
 
 [build-dependencies]
-lalrpop = "0.7.0"
+lalrpop = "0.8.0"
 
 [dependencies]
-lalrpop-util = "0.7.0"
+lalrpop-util = "0.8.0"
