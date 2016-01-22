@@ -72,8 +72,35 @@ pub struct CompilationUnit {
 #[derive(Debug, Clone)]
 pub enum Type {
     NormalClass(Class),
-    Enum(()),
+    // Enum(()),
     NormalInterface(Interface),
+}
+
+pub trait TypeExt {
+    fn ident(&self) -> &Ident;
+    fn vis(&self) -> Visibility;
+    fn static_(&self) -> bool;
+}
+
+impl TypeExt for Type {
+    fn ident(&self) -> &Ident {
+        match *self {
+            Type::NormalClass(ref c) => c.ident(),
+            Type::NormalInterface(ref i) => i.ident(),
+        }
+    }
+    fn vis(&self) -> Visibility {
+        match *self {
+            Type::NormalClass(ref c) => c.vis(),
+            Type::NormalInterface(ref i) => i.vis(),
+        }
+    }
+    fn static_(&self) -> bool {
+        match *self {
+            Type::NormalClass(ref c) => c.static_(),
+            Type::NormalInterface(ref i) => i.static_(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -122,12 +149,29 @@ pub struct Interface {
     pub types: Vec<Type>,
 }
 
+impl TypeExt for Interface {
+    fn ident(&self) -> &Ident { &self.name }
+    fn vis(&self) -> Visibility { self.vis }
+    fn static_(&self) -> bool { self.static_ }
+}
+
 #[derive(Debug, Clone)]
 pub struct Class {
     pub name: Ident,
     pub vis: Visibility,
     pub methods: Vec<Method>,
     pub fields: Vec<Field>,
+}
+
+impl TypeExt for Class {
+    fn ident(&self) -> &Ident { &self.name }
+    fn vis(&self) -> Visibility { self.vis }
+    fn static_(&self) -> bool { unimplemented!() }
+}
+
+pub enum TypeItem {
+    Type(Type),
+    // Method(()),
 }
 
 #[derive(Debug, Clone)]

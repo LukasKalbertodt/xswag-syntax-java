@@ -10,6 +10,7 @@
 ///
 
 use ast;
+use ast::TypeExt;
 use lex::{Token, Keyword};
 use base::code::{BytePos, Span};
 use base::diag::Report;
@@ -264,9 +265,44 @@ NormalInterfaceDecl: ast::Interface = {
                 if kw == Keyword::Abstract {
                     errors.push(Report::simple_warning(
                         "interfaces are abstract by default. The `abstract` \
-                            modifier is obsolete -- better remove it",
+                            modifier is obsolete -- better remove it.",
                         Span { lo: lo, hi: hi }
                     ));
+                }
+            }
+        }
+
+        // check body
+        let mut types = Vec::new();
+        for item in body {
+            match item {
+                ast::TypeItem::Type(t) => {
+                    // there are special rules for inner types
+
+                    // TODO: spans are confusing right now (from type name)
+                    match t.vis() {
+                        ast::Visibility::Private | ast::Visibility::Protected => {
+                            errors.push(Report::simple_error(
+                                "a member type of an interface is always \
+                                    public. You must not use `private` or \
+                                    `protected` modifiers.",
+                                t.ident().span
+                            ));
+                        },
+                        ast::Visibility::Public => {
+                            errors.push(Report::simple_warning(
+                                "a member type of an interface is implicitly \
+                                    public. You don't need to explicitly mark \
+                                    it public.",
+                                t.ident().span
+                            ));
+                        }
+                        _ => {},
+                    }
+                    // TODO: set visibility to public
+
+
+                    types.push(t);
                 }
             }
         }
@@ -277,7 +313,7 @@ NormalInterfaceDecl: ast::Interface = {
             static_: forward_reports(errors, || find_static(&mods)),
             strictfp: forward_reports(errors, || find_strictfp(&mods)),
             extends: extends.unwrap_or(Vec::new()),
-            types: body,
+            types: types,
         }
     }
 };
@@ -286,10 +322,10 @@ NormalInterfaceDecl: ast::Interface = {
 InterfaceBody = "{" <InterfaceMemberDecl*> "}";
 
 // 9.1.4
-InterfaceMemberDecl = {
+InterfaceMemberDecl: ast::TypeItem = {
     // ConstantDecl => ,
     // InterfaceMethodDecl => ,
-    InterfaceDecl,
+    InterfaceDecl => ast::TypeItem::Type(<>),
     // ClassDecl,
 };
 
