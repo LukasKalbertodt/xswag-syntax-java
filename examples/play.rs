@@ -8,7 +8,7 @@ const SRC: &'static str = "\
 package yolo.swag;
 
 import AlgoTools.IO;
-import java.lang-*;
+import java.lang.*;
 
 public private class Cheese {
 }

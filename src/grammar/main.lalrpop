@@ -140,7 +140,7 @@ Comma<T>: Vec<T> = {
     }
 };
 
-// #[inline]
+#[inline]
 Path: ast::Path = {
     <head: Ident> <tail: ("." <Ident>)*> => {
         let mut v = tail;
@@ -186,9 +186,9 @@ PackageDecl = { "package" <Path> ";" };
 // how to resolve shift-reduce conflicts
 ImportDecl: ast::Import = {
     "import" <Path> ";" => ast::Import::SingleType(<>),
-    "import" <Path> "-" "*" ";" => ast::Import::TypeOnDemand(<>),
+    "import" <Path> "." "*" ";" => ast::Import::TypeOnDemand(<>),
     "import" "static" <Path> ";" => ast::Import::SingleStatic(<>),
-    "import" "static" <Path> "-" "*" ";" => ast::Import::StaticOnDemand(<>),
+    "import" "static" <Path> "." "*" ";" => ast::Import::StaticOnDemand(<>),
 };
 
 // 7.6
