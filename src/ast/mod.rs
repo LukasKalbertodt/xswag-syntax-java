@@ -118,6 +118,7 @@ pub struct Interface {
     pub vis: Visibility,
     pub static_: bool,
     pub strictfp: bool,
+    pub extends: Vec<Path>,
 }
 
 #[derive(Debug, Clone)]

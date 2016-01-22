@@ -151,8 +151,8 @@ extern {
 // ===========================================================================
 Comma<T>: Vec<T> = {
     <head: T> <tail: ("," <T>)*> => {
-        let mut v = tail;
-        v.push(head);
+        let mut v = vec![head];
+        v.extend_from_slice(&tail);
         v
     }
 };
@@ -189,8 +189,8 @@ Ident: ast::Ident = {
 #[inline]
 Path: ast::Path = {
     <head: Ident> <tail: ("." <Ident>)*> => {
-        let mut v = tail;
-        v.push(head);
+        let mut v = vec![head];
+        v.extend_from_slice(&tail);
         ast::Path {
             segments: v,
         }
@@ -251,7 +251,7 @@ InterfaceDecl: ast::Type = {
 // 9.1
 NormalInterfaceDecl: ast::Interface = {
     <mods: Spanned<TypeModifier>*> "interface" <name: Ident>
-        ("extends" Comma<InterfaceType>)? InterfaceBody =>
+        <extends: ("extends" <Comma<InterfaceType>>)?> InterfaceBody =>
     {
         // lookup visibility
         let vis = forward_reports(errors, || get_visibility(&mods));
@@ -274,6 +274,7 @@ NormalInterfaceDecl: ast::Interface = {
             vis: vis.unwrap_or(ast::Visibility::Package),
             static_: forward_reports(errors, || find_static(&mods)),
             strictfp: forward_reports(errors, || find_strictfp(&mods)),
+            extends: extends.unwrap_or(Vec::new()),
         }
     }
 };

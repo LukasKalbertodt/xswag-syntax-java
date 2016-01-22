@@ -14,7 +14,7 @@ public private class Cheese {
 }
 
 
-abstract interface Bread {}
+public abstract interface Bread extends Food, java.lang.Comparable {}
 
 ";
 
@@ -23,7 +23,7 @@ fn main() {
     let (res, errors) = syntax::parse_compilation_unit(&file);
 
 	match res {
-		Ok(ast) => print!("{:#?}", ast),
+		Ok(ast) => println!("{:#?}", ast),
 		Err(e) => {
 			// println!("{:#?}", e);
 			diag::print(&e, &file, diag::PrintOptions::default());
