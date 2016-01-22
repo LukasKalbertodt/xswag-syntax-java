@@ -250,8 +250,10 @@ InterfaceDecl: ast::Type = {
 
 // 9.1
 NormalInterfaceDecl: ast::Interface = {
-    <mods: Spanned<TypeModifier>*> "interface" <name: Ident>
-        <extends: ("extends" <Comma<InterfaceType>>)?> InterfaceBody =>
+    <mods: Spanned<TypeModifier>*>
+        "interface" <name: Ident>
+        <extends: ("extends" <Comma<InterfaceType>>)?>
+        <body: InterfaceBody> =>
     {
         // lookup visibility
         let vis = forward_reports(errors, || get_visibility(&mods));
@@ -275,12 +277,21 @@ NormalInterfaceDecl: ast::Interface = {
             static_: forward_reports(errors, || find_static(&mods)),
             strictfp: forward_reports(errors, || find_strictfp(&mods)),
             extends: extends.unwrap_or(Vec::new()),
+            types: body,
         }
     }
 };
 
 // 9.1.4 TODO
-InterfaceBody = "{" "}";
+InterfaceBody = "{" <InterfaceMemberDecl*> "}";
+
+// 9.1.4
+InterfaceMemberDecl = {
+    // ConstantDecl => ,
+    // InterfaceMethodDecl => ,
+    InterfaceDecl,
+    // ClassDecl,
+};
 
 
 // ---------------------------------------------------------------------------

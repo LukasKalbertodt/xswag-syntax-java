@@ -119,6 +119,7 @@ pub struct Interface {
     pub static_: bool,
     pub strictfp: bool,
     pub extends: Vec<Path>,
+    pub types: Vec<Type>,
 }
 
 #[derive(Debug, Clone)]

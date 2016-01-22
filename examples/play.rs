@@ -14,7 +14,10 @@ public private class Cheese {
 }
 
 
-public abstract interface Bread extends Food, java.lang.Comparable {}
+public abstract interface Bread extends Food, java.lang.Comparable {
+	private interface Inner {}
+
+}
 
 ";
 
