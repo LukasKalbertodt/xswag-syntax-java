@@ -11,11 +11,10 @@ import AlgoTools.IO;
 import java.lang-*;
 
 public private class Cheese {
-	private public % yolo;
-};
+}
 
-;
-class Bread {}
+
+interface Bread
 
 
 ";

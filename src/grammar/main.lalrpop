@@ -3,6 +3,7 @@ use lex::{Token, Keyword};
 use base::code::{BytePos, Span};
 use base::diag::Report;
 use lalrpop_util::ParseError;
+use super::get_visibility;
 
 grammar(errors: &mut Vec<Report>);
 
@@ -157,6 +158,8 @@ Ident: ast::Ident = {
      }
 };
 
+Spanned<T> = { @L T @R };
+
 
 // ===========================================================================
 // Grammar definitions in a top-down or depth first search order
@@ -197,7 +200,33 @@ TypeDecl: Option<ast::Type> = {
 
 // 9.1 TODO
 InterfaceDecl: ast::Type = {
-    "?" => ast::Type::NormalInterface(()),
+    <NormalInterfaceDecl> => ast::Type::NormalInterface(<>),
+};
+
+// 9.1
+NormalInterfaceDecl: ast::Interface = {
+    <mods: Spanned<Modifier>*> "interface" <name: Ident> => {
+        let vis = match get_visibility(&mods) {
+            Ok(v) => v,
+            Err(es) => {
+                errors.extend_from_slice(&es);
+                None
+            },
+        };
+        ast::Interface {
+            name: name,
+            vis: vis.unwrap_or(ast::Visibility::Package),
+        }
+    }
+};
+
+InterfaceModifier = {
+    "public",
+    "protected",
+    "private",
+    "abstract",
+    "static",
+    "strictfp",
 };
 
 // 8.1 ClassDeclaration TODO
@@ -208,7 +237,7 @@ ClassDecl: ast::Type = {
 
 // 8.1 NormalClassDeclaration TODO
 NormalClassDecl: ast::Class = {
-    <modifier:ClassModifier*>
+    <modifier: Spanned<Modifier>*>
     "class" <l:@L> <class_name: Ident> <r:@R>
     <body: ClassBody> =>? {
         // check modifier
@@ -222,7 +251,7 @@ NormalClassDecl: ast::Class = {
 };
 
 // 8.1.1 TODO
-ClassModifier = {
+Modifier = {
     "public",
     "protected",
     "private",
@@ -266,7 +295,7 @@ FieldDecl: Vec<ast::Field> = {
             )
         ).collect();
 
-        // check modifier
+        // check Modifier
         let mut vis = ast::Visibility::Package;
         let mut first_vis = None;
         let mut static_ = false;

@@ -73,7 +73,7 @@ pub struct CompilationUnit {
 pub enum Type {
     NormalClass(Class),
     Enum(()),
-    NormalInterface(()),
+    NormalInterface(Interface),
 }
 
 #[derive(Debug, Clone)]
@@ -110,6 +110,12 @@ pub enum Visibility {
     Protected,
     Package,
     Private,
+}
+
+#[derive(Debug, Clone)]
+pub struct Interface {
+    pub name: Ident,
+    pub vis: Visibility,
 }
 
 #[derive(Debug, Clone)]
