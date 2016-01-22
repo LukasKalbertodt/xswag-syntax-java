@@ -1,9 +1,26 @@
+/// This file contains the grammar for Java 8.
+///
+/// The grammar is still highly incomplete! At every production/non-terminal
+/// is a TODO-comment if it's not completed yet. However, these features won't
+/// be "implemented" yet (read: we ignore them for now). Not implementing those
+/// features doesn't count as "not completed":
+///
+/// - Annotations
+/// - Generics
+///
+
 use ast;
 use lex::{Token, Keyword};
 use base::code::{BytePos, Span};
 use base::diag::Report;
 use lalrpop_util::ParseError;
-use super::get_visibility;
+use super::{
+    get_visibility,
+    find_static,
+    find_strictfp,
+    find_abstract,
+    forward_reports,
+};
 
 grammar(errors: &mut Vec<Report>);
 
@@ -130,14 +147,43 @@ extern {
 
 
 // ===========================================================================
-// Definition of helper grammars
+// Definition of helper productions and macros
 // ===========================================================================
 Comma<T>: Vec<T> = {
-    <head: T> <tail: (<T> ",")*> => {
+    <head: T> <tail: ("," <T>)*> => {
         let mut v = tail;
         v.push(head);
         v
     }
+};
+
+#[inline]
+Spanned<T> = { @L T @R };
+
+
+// ===========================================================================
+// Helper grammar definitions that are used in several sections
+// ===========================================================================
+// Type modifier is a merge of "InterfaceModifier" and "ClassModifier"
+TypeModifierImpl = {
+    "public",
+    "protected",
+    "private",
+    "abstract",
+    "static",
+    "final",
+    "strictfp",
+};
+TypeModifier: Keyword = {
+    TypeModifierImpl =>
+        if let Token::KeyW(kw) = <> { kw } else { unreachable!() }
+};
+
+Ident: ast::Ident = {
+    <l:@L> <w:Word> <r:@R>  => ast::Ident {
+        name: w,
+        span: Span { lo: l, hi: r },
+     }
 };
 
 #[inline]
@@ -151,19 +197,14 @@ Path: ast::Path = {
     }
 };
 
-Ident: ast::Ident = {
-    <l:@L> <w:Word> <r:@R>  => ast::Ident {
-        name: w,
-        span: Span { lo: l, hi: r },
-     }
-};
-
-Spanned<T> = { @L T @R };
-
+InterfaceType = ClassType;
+ClassType = Path;
 
 // ===========================================================================
-// Grammar definitions in a top-down or depth first search order
+// Grammar definitions in a top-down fashion/depth first search order
 // ===========================================================================
+// ~~~ Section 7 ~~~
+
 // 7.3 (goal symbol)
 pub CompilationUnit: ast::CompilationUnit = {
     <package: PackageDecl?>
@@ -182,8 +223,7 @@ pub CompilationUnit: ast::CompilationUnit = {
 // 7.4
 PackageDecl = { "package" <Path> ";" };
 
-// FIXME: the dash "-" needs to be replaced by "." after I figured out
-// how to resolve shift-reduce conflicts
+// 7.5
 ImportDecl: ast::Import = {
     "import" <Path> ";" => ast::Import::SingleType(<>),
     "import" <Path> "." "*" ";" => ast::Import::TypeOnDemand(<>),
@@ -198,36 +238,51 @@ TypeDecl: Option<ast::Type> = {
     ";" => None
 };
 
-// 9.1 TODO
+
+// ---------------------------------------------------------------------------
+// ~~~ TODO: Section 9 ~~~
+
+// 9.1
 InterfaceDecl: ast::Type = {
     <NormalInterfaceDecl> => ast::Type::NormalInterface(<>),
+    // TODO: AnnotationTypeDeclaration
 };
 
 // 9.1
 NormalInterfaceDecl: ast::Interface = {
-    <mods: Spanned<Modifier>*> "interface" <name: Ident> => {
-        let vis = match get_visibility(&mods) {
-            Ok(v) => v,
-            Err(es) => {
-                errors.extend_from_slice(&es);
-                None
-            },
-        };
+    <mods: Spanned<TypeModifier>*> "interface" <name: Ident>
+        ("extends" Comma<InterfaceType>)? InterfaceBody =>
+    {
+        // lookup visibility
+        let vis = forward_reports(errors, || get_visibility(&mods));
+
+        // check if unnecessary `abstract` keyword was specified
+        if forward_reports(errors, || find_abstract(&mods)) {
+            for &(lo, kw, hi) in &mods {
+                if kw == Keyword::Abstract {
+                    errors.push(Report::simple_warning(
+                        "interfaces are abstract by default. The `abstract` \
+                            modifier is obsolete -- better remove it",
+                        Span { lo: lo, hi: hi }
+                    ));
+                }
+            }
+        }
+
         ast::Interface {
             name: name,
             vis: vis.unwrap_or(ast::Visibility::Package),
+            static_: forward_reports(errors, || find_static(&mods)),
+            strictfp: forward_reports(errors, || find_strictfp(&mods)),
         }
     }
 };
 
-InterfaceModifier = {
-    "public",
-    "protected",
-    "private",
-    "abstract",
-    "static",
-    "strictfp",
-};
+// 9.1.4 TODO
+InterfaceBody = "{" "}";
+
+
+// ---------------------------------------------------------------------------
 
 // 8.1 ClassDeclaration TODO
 ClassDecl: ast::Type = {
@@ -237,7 +292,7 @@ ClassDecl: ast::Type = {
 
 // 8.1 NormalClassDeclaration TODO
 NormalClassDecl: ast::Class = {
-    <modifier: Spanned<Modifier>*>
+    <modifier: Spanned<TypeModifier>*>
     "class" <l:@L> <class_name: Ident> <r:@R>
     <body: ClassBody> =>? {
         // check modifier
@@ -250,16 +305,6 @@ NormalClassDecl: ast::Class = {
     }
 };
 
-// 8.1.1 TODO
-Modifier = {
-    "public",
-    "protected",
-    "private",
-    "abstract",
-    "static",
-    "final",
-    "strictfp"
-};
 
 // 8.1.6
 ClassBody: Vec<ast::Field> = {

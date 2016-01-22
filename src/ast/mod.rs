@@ -116,6 +116,8 @@ pub enum Visibility {
 pub struct Interface {
     pub name: Ident,
     pub vis: Visibility,
+    pub static_: bool,
+    pub strictfp: bool,
 }
 
 #[derive(Debug, Clone)]

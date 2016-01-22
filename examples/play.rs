@@ -14,8 +14,7 @@ public private class Cheese {
 }
 
 
-interface Bread
-
+abstract interface Bread {}
 
 ";
 
