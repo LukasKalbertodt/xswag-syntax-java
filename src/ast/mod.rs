@@ -7,7 +7,7 @@ pub mod item;
 
 pub use self::item::{
     ItemExt,
-    Type,
+    TypeDef,
     Interface,
     Class,
     Field,
@@ -70,6 +70,10 @@ pub struct Path {
 
 // }
 
+#[derive(Debug, Clone)]
+pub struct Type {
+    pub name: Ident,
+}
 
 
 // ============================================================================
@@ -80,7 +84,7 @@ pub struct Path {
 pub struct CompilationUnit {
     pub package: Option<Path>,
     pub imports: Vec<Import>,
-    pub types: Vec<Type>,
+    pub types: Vec<TypeDef>,
 }
 
 impl Default for Ident {

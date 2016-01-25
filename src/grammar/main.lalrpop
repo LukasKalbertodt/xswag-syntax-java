@@ -234,7 +234,7 @@ ImportDecl: ast::Import = {
 };
 
 // 7.6
-TypeDecl: Option<ast::Type> = {
+TypeDecl: Option<ast::TypeDef> = {
     <ClassDecl> => Some(<>),
     <InterfaceDecl> => Some(<>),
     ";" => None
@@ -245,8 +245,8 @@ TypeDecl: Option<ast::Type> = {
 // ~~~ TODO: Section 9 ~~~
 
 // 9.1
-InterfaceDecl: ast::Type = {
-    <NormalInterfaceDecl> => ast::Type::NormalInterface(<>),
+InterfaceDecl: ast::TypeDef = {
+    <NormalInterfaceDecl> => ast::TypeDef::NormalInterface(<>),
     // TODO: AnnotationTypeDeclaration
 };
 
@@ -347,7 +347,7 @@ ConstantDecl: Vec<ast::Field> = {
                 vis: ast::Visibility::Public,
                 static_: true,
                 final_: true,
-                ty: "TODO".into(),
+                ty: ty.clone(),
                 name: var_decl,
             }
         }).collect()
@@ -359,8 +359,8 @@ ConstantDecl: Vec<ast::Field> = {
 
 
 // 8.1 ClassDeclaration TODO
-ClassDecl: ast::Type = {
-    <NormalClassDecl> => ast::Type::NormalClass(<>),
+ClassDecl: ast::TypeDef = {
+    <NormalClassDecl> => ast::TypeDef::NormalClass(<>),
     // EnumDecl,
 };
 
@@ -484,7 +484,7 @@ FieldDecl: Vec<ast::Field> = {
                 vis: vis,
                 static_: static_,
                 final_: final_,
-                ty: "<TODO>".into(),
+                ty: ty.clone(),
                 name: decl,
             };
             Ok(f)
@@ -501,7 +501,31 @@ FieldModifier = {
 };
 
 // 8.3 TODO
-UnannType = "%";
+UnannType = UnannTypeWithoutDim;
+
+UnannTypeWithoutDim: ast::Type = {
+    Spanned<NumericType> => ast::Type {
+        name: ast::Ident {
+            name: <>.0.to_string(),
+            span: <>.1,
+        }
+    },
+    Spanned<"boolean"> => ast::Type {
+        name: ast::Ident {
+            name: "boolean".into(),
+            span: <>.1,
+        }
+    },
+    // UnannClassOrInterfaceType
+    UnannTypeVariable => ast::Type {
+        name: <>,
+    },
+};
+
+UnannTypeVariable = Ident;
+
+
+
 
 // 8.3
 VariableDeclaratorList = Comma<VariableDeclarator>;
@@ -519,3 +543,34 @@ VariableDeclaratorId = {
 
 // 8.3 TODO
 VariableInitializer = "~";
+
+
+// ---------------------------------------------------------------------------
+// ~~~ Section 4 [ANNO, -] ~~~
+
+// 4.2 ANNO
+PrimitiveType = {
+    NumericType,
+    "boolean",
+};
+
+// 4.2
+NumericType = {
+    IntegralType,
+    FloatingPointType,
+};
+
+// 4.2
+IntegralType = {
+    "byte",
+    "short",
+    "int",
+    "long",
+    "char",
+};
+
+// 4.2
+FloatingPointType = {
+    "float",
+    "double",
+};

@@ -7,6 +7,7 @@ pub use super::{
     Ident,
     Path,
     Import,
+    Type,
 };
 
 /// This trait provides generic access to several properties of items
@@ -44,7 +45,7 @@ pub trait ItemExt {
 
 /// Represents a Java type
 #[derive(Debug, Clone)]
-pub enum Type {
+pub enum TypeDef {
     /// A Java class, defined with `class`
     NormalClass(Class),
     // Enum(()),
@@ -53,23 +54,23 @@ pub enum Type {
 }
 
 
-impl ItemExt for Type {
+impl ItemExt for TypeDef {
     fn ident(&self) -> Option<&Ident> {
         match *self {
-            Type::NormalClass(ref c) => c.ident(),
-            Type::NormalInterface(ref i) => i.ident(),
+            TypeDef::NormalClass(ref c) => c.ident(),
+            TypeDef::NormalInterface(ref i) => i.ident(),
         }
     }
     fn vis(&self) -> Visibility {
         match *self {
-            Type::NormalClass(ref c) => c.vis(),
-            Type::NormalInterface(ref i) => i.vis(),
+            TypeDef::NormalClass(ref c) => c.vis(),
+            TypeDef::NormalInterface(ref i) => i.vis(),
         }
     }
     fn static_(&self) -> Option<bool> {
         match *self {
-            Type::NormalClass(ref c) => c.static_(),
-            Type::NormalInterface(ref i) => i.static_(),
+            TypeDef::NormalClass(ref c) => c.static_(),
+            TypeDef::NormalInterface(ref i) => i.static_(),
         }
     }
 }
@@ -85,7 +86,7 @@ pub enum Item {
 
 
 pub enum TypeItem {
-    Type(Type),
+    Type(TypeDef),
     Constant(Field),
     // Method(()),
 }
@@ -98,7 +99,7 @@ pub struct Interface {
     pub static_: bool,
     pub strictfp: bool,
     pub extends: Vec<Path>,
-    pub types: Vec<Type>,
+    pub types: Vec<TypeDef>,
     pub constants: Vec<Field>,
 }
 
@@ -128,7 +129,7 @@ pub struct Field {
     pub vis: Visibility,
     pub static_: bool,
     pub final_: bool,
-    pub ty: String,
+    pub ty: Type,
     pub name: Ident,
     // pub init ...
 }
