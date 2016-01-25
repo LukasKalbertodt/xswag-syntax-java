@@ -166,7 +166,7 @@ Spanned<T> = { @L T @R };
 // Helper grammar definitions that are used in several sections
 // ===========================================================================
 // Type modifier is a merge of "InterfaceModifier" and "ClassModifier"
-TypeModifierImpl = {
+ModifierImpl = {
     "public",
     "protected",
     "private",
@@ -175,9 +175,8 @@ TypeModifierImpl = {
     "final",
     "strictfp",
 };
-TypeModifier: Keyword = {
-    TypeModifierImpl =>
-        if let Token::KeyW(kw) = <> { kw } else { unreachable!() }
+Modifier: Keyword = {
+    ModifierImpl => if let Token::KeyW(kw) = <> { kw } else { unreachable!() }
 };
 
 Ident: ast::Ident = {
@@ -251,7 +250,7 @@ InterfaceDecl: ast::Type = {
 
 // 9.1
 NormalInterfaceDecl: ast::Interface = {
-    <mods: Spanned<TypeModifier>*>
+    <mods: Spanned<Modifier>*>
         "interface" <name: Ident>
         <extends: ("extends" <Comma<InterfaceType>>)?>
         <body: InterfaceBody> =>
@@ -329,7 +328,7 @@ InterfaceMemberDecl: ast::TypeItem = {
 };
 
 ConstantDecl = {
-    <Spanned<TypeModifier>*> "++" ";",
+    <Spanned<Modifier>*> "++" ";",
 };
 
 
@@ -343,7 +342,7 @@ ClassDecl: ast::Type = {
 
 // 8.1 NormalClassDeclaration TODO
 NormalClassDecl: ast::Class = {
-    <modifier: Spanned<TypeModifier>*>
+    <modifier: Spanned<Modifier>*>
     "class" <l:@L> <class_name: Ident> <r:@R>
     <body: ClassBody> =>? {
         // check modifier
