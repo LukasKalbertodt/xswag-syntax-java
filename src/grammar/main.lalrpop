@@ -336,19 +336,23 @@ InterfaceMemberDecl: Vec<ast::TypeItem> = {
     // ClassDecl,
 };
 
+// 9.3
 ConstantDecl: Vec<ast::Field> = {
     <mods: Spanned<Modifier>*>
     <ty: UnannType>
     <var_decls: VariableDeclaratorList> ";" => {
         check_mods!(errors, "constant", mods, [Public, Static, Final]);
 
-        var_decls.into_iter().map(|var_decl| {
+        var_decls.into_iter().map(|(ident, dims)| {
+            let mut ty = ty.clone();
+            ty.dims += dims.unwrap_or(0);
+
             ast::Field {
                 vis: ast::Visibility::Public,
                 static_: true,
                 final_: true,
                 ty: ty.clone(),
-                name: var_decl,
+                name: ident,
             }
         }).collect()
     }
@@ -485,7 +489,7 @@ FieldDecl: Vec<ast::Field> = {
                 static_: static_,
                 final_: final_,
                 ty: ty.clone(),
-                name: decl,
+                name: decl.0,
             };
             Ok(f)
         }).collect()
@@ -500,7 +504,7 @@ FieldModifier = {
     "final",
 };
 
-// 8.3 TODO
+// 8.3
 UnannType: ast::Type = {
     <ty: UnannTypeWithoutDim> <dims: Dims?> => {
         let mut ty = ty;
@@ -533,6 +537,7 @@ UnannTypeWithoutDim: ast::Type = {
         dims: 0,
     }
 
+    // UnannReferenceType >> UnannTypeVariable GENE, ANNO
     // GENE: put this in again
     // UnannTypeVariable => ast::Type {
     //     name: <>,
@@ -548,15 +553,14 @@ UnannTypeWithoutDim: ast::Type = {
 // 8.3
 VariableDeclaratorList = Comma<VariableDeclarator>;
 
-// 8.3 TODO
+// 8.3
 VariableDeclarator = {
     <VariableDeclaratorId> ("=" <VariableInitializer>)?
 };
 
-// 8.3 TODO
+// 8.3
 VariableDeclaratorId = {
-    // <id: Ident> <dims: Dims?>;
-    Ident
+    <Ident> <Dims?>
 };
 
 // 8.3 TODO
