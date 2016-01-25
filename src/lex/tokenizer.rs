@@ -498,10 +498,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn curr_span(&self) -> Span {
-        Span {
-            lo: self.token_start,
-            hi: self.curr_pos,
-        }
+        Span::new(self.token_start, self.curr_pos)
     }
 
     fn simple_error<P, S: Into<String>>(&self, poison: P, msg: S) -> Error<P> {

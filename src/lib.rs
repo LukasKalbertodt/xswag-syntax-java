@@ -37,7 +37,7 @@ pub fn parse_compilation_unit(file: &base::code::FileMap)
                 Some((lo, tok, hi)) => {
                     Report::simple_error(
                         format!("lalrpop UnrecognizedToken `{:?}`", tok),
-                        Span { lo: lo, hi: hi }
+                        Span::new(lo, hi),
                     )
                 }
             }.with_note(format!("Expected one of {:?}", exp))
@@ -45,7 +45,7 @@ pub fn parse_compilation_unit(file: &base::code::FileMap)
         ParseError::ExtraToken  { token: (lo, tok, hi) } => {
             Report::simple_error(
                 format!("lalrpop ExtraToken {:?}", tok),
-                Span { lo: lo, hi: hi }
+                Span::new(lo, hi),
             )
         },
     });

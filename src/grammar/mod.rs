@@ -23,22 +23,21 @@ fn check_allowed_modifier(actual: &Mods, allowed: &[lex::Keyword], ctx: &str)
 {
     let mut seen = Vec::new();
     actual.iter().flat_map(|&(lo, m, hi)| {
-        let span = Span { lo: lo, hi: hi };
+        let span = Span::new(lo, hi);
 
         // check for duplicate modifiers
-        // let prev = seen.iter().find(|&&(_, hay)| hay == m);
-        let mut reps = if let Some(&(prev_span, _)) = seen.iter().find(|&&(_, hay)| hay == m) {
-            vec![Report::simple_error(
+        let mut reps = Vec::new();
+        if let Some(&(prev_span, _)) = seen.iter().find(|&&(_, hay)| hay == m) {
+            reps.push(Report::simple_error(
                 format!("duplicate `{:?}` modifier", m),
                 span,
             ).with_span_note(
                 format!("the first `{:?}` modifier is already here", m),
                 prev_span,
-            )]
+            ));
         } else {
             seen.push((span, m));
-            vec![]
-        };
+        }
 
         // check if modifier is valid
         if !allowed.contains(&m) {
@@ -50,22 +49,17 @@ fn check_allowed_modifier(actual: &Mods, allowed: &[lex::Keyword], ctx: &str)
     }).collect()
 }
 
-fn get_visibility(mods: &Vec<(BytePos, lex::Keyword, BytePos)>)
-	-> (Option<ast::Visibility>, Vec<Report>)
+fn get_visibility(mods: &Mods, errors: &mut Vec<Report>)
+	-> Option<ast::Visibility>
 {
 	use lex::{Token, Keyword};
 
     let mut vis = None;
     let mut first_vis = None;
-    let mut errors = Vec::new();
 
 	for &(lo, modifier, hi) in mods {
 		// convert into more convenient type
-		let span = Span {
-			lo: lo,
-			hi: hi
-		};
-
+		let span = Span::new(lo, hi);
 
         match modifier {
             Keyword::Public | Keyword::Private | Keyword::Protected => {
@@ -93,68 +87,21 @@ fn get_visibility(mods: &Vec<(BytePos, lex::Keyword, BytePos)>)
         }
     }
 
-    (vis, errors)
+    vis
 }
 
-
 macro_rules! gen_finder {
-    ($name:ident, $keyword:ident, $msg:expr) => {
+    ($name:ident, $keyword:ident) => {
         /// Returns if the modifier for the given property is in the list of
         /// modifiers. Does NOT check duplicate modifier.
         fn $name(mods: &Mods) -> Option<Span> {
             mods.iter()
                 .find(|&&(_, m, _)| m == lex::Keyword::$keyword)
-                .map(|&(lo, _, hi)| Span { lo: lo, hi: hi })
-            // let mut found = false;
-
-            // for &(lo, modifier, hi) in mods {
-            //     // convert into more convenient type
-            //     let span = Span {
-            //         lo: lo,
-            //         hi: hi
-            //     };
-
-            //     match modifier {
-            //         lex::Keyword::$keyword => {
-            //             // check if there was a visibility modifier before
-            //             // this one
-            //             if let Some(prev_span) = first_pos {
-            //                 let e = Report::simple_error(
-            //                     stringify!("duplicate `" $msg "` modifier"),
-            //                     span
-            //                 ).with_span_note(
-            //                     stringify!(
-            //                         "the first `"
-            //                         $msg
-            //                         "` modifier is already here"
-            //                     ),
-            //                     prev_span
-            //                 );
-            //                 reports.push(e);
-            //             } else {
-            //                 first_pos = Some(span);
-            //                 found = true;
-            //             }
-            //         },
-            //         _ => {},
-            //     }
-            // }
-
-            // (found, reports)
+                .map(|&(lo, _, hi)| Span::new(lo, hi))
         }
     }
 }
 
-gen_finder!(find_static, Static, "static");
-gen_finder!(find_strictfp, Strictfp, "strictfp");
-gen_finder!(find_abstract, Abstract, "abstract");
-
-
-
-fn forward_reports<T, F>(orig: &mut Vec<Report>, fun: F) -> T
-    where F: FnOnce() -> (T, Vec<Report>)
-{
-    let (v, reports) = fun();
-    orig.extend_from_slice(&reports);
-    v
-}
+gen_finder!(get_static, Static);
+gen_finder!(get_strictfp, Strictfp);
+gen_finder!(get_abstract, Abstract);

@@ -309,7 +309,7 @@ fn unicode_escapes() {
     assert_eq!(spans(r"z\u0078z"), vec![
         TokenSpan {
             tok: Ident("zxz".into()),
-            span: Span { lo: BytePos(0), hi: BytePos(8) }
+            span: Span::new(BytePos(0), BytePos(8))
         }
     ]);
 
@@ -319,11 +319,11 @@ fn unicode_escapes() {
     let a = ra.remove(0).unwrap_err();   // has to be `Err`
     assert_eq!(a.poison, Some(TokenSpan {
         tok: Ident("zz".into()),
-        span: Span { lo: BytePos(0), hi: BytePos(6) }
+        span: Span::new(BytePos(0), BytePos(6))
     }));
     assert_eq!(a.report, diag::Report {
         kind: diag::ReportKind::Error,
-        span: Span { lo: BytePos(1), hi: BytePos(5)},
+        span: Span::new(BytePos(1), BytePos(5)),
         remarks: a.report.remarks.clone(), // don't care about messages
     });
 
@@ -333,11 +333,11 @@ fn unicode_escapes() {
     let a = ra.remove(0).unwrap_err();   // has to be `Err`
     assert_eq!(a.poison, Some(TokenSpan {
         tok: Ident("zz".into()),
-        span: Span { lo: BytePos(0), hi: BytePos(8) }
+        span: Span::new(BytePos(0), BytePos(8))
     }));
     assert_eq!(a.report, diag::Report {
         kind: diag::ReportKind::Error,
-        span: Span { lo: BytePos(1), hi: BytePos(7)},
+        span: Span::new(BytePos(1), BytePos(7)),
         remarks: a.report.remarks.clone(), // don't care about messages
     });
 
@@ -345,7 +345,7 @@ fn unicode_escapes() {
     assert_eq!(spans(r"z\uuuu0078z"), vec![
         TokenSpan {
             tok: Ident("zxz".into()),
-            span: Span { lo: BytePos(0), hi: BytePos(11) }
+            span: Span::new(BytePos(0), BytePos(11))
         }
     ]);
     // backslashes that are not eligible TODO
@@ -353,7 +353,7 @@ fn unicode_escapes() {
     // assert_eq!(spans(r"z\\uuuu0078z"), vec![
     //     TokenSpan {
     //         tok: Ident(r"z\\uuuu0078z".into()),
-    //         span: Span { lo: BytePos(0), hi: BytePos(12) }
+    //         span: Span::new(BytePos(0), BytePos(12))
     //     }
     // ]);
 }
@@ -363,30 +363,30 @@ fn new_lines() {
     assert_eq!(spans("abc \n xyz"), vec![
         TokenSpan {
             tok: Ident("abc".into()),
-            span: Span { lo: BytePos(0), hi: BytePos(3) }
+            span: Span::new(BytePos(0), BytePos(3))
         },
         TokenSpan {
             tok: Whitespace,
-            span: Span { lo: BytePos(3), hi: BytePos(6) }
+            span: Span::new(BytePos(3), BytePos(6))
         },
         TokenSpan {
             tok: Ident("xyz".into()),
-            span: Span { lo: BytePos(6), hi: BytePos(9) }
+            span: Span::new(BytePos(6), BytePos(9))
         }
     ]);
 
     assert_eq!(spans("abc \r\n xyz"), vec![
         TokenSpan {
             tok: Ident("abc".into()),
-            span: Span { lo: BytePos(0), hi: BytePos(3) }
+            span: Span::new(BytePos(0), BytePos(3))
         },
         TokenSpan {
             tok: Whitespace,
-            span: Span { lo: BytePos(3), hi: BytePos(7) }
+            span: Span::new(BytePos(3), BytePos(7))
         },
         TokenSpan {
             tok: Ident("xyz".into()),
-            span: Span { lo: BytePos(7), hi: BytePos(10) }
+            span: Span::new(BytePos(7), BytePos(10))
         }
     ]);
 }
@@ -396,41 +396,41 @@ fn basic_spans() {
     assert_eq!(spans("abc xyz"), vec![
         TokenSpan {
             tok: Ident("abc".into()),
-            span: Span { lo: BytePos(0), hi: BytePos(3) }
+            span: Span::new(BytePos(0), BytePos(3))
         },
         TokenSpan {
             tok: Whitespace,
-            span: Span { lo: BytePos(3), hi: BytePos(4) }
+            span: Span::new(BytePos(3), BytePos(4))
         },
         TokenSpan {
             tok: Ident("xyz".into()),
-            span: Span { lo: BytePos(4), hi: BytePos(7) }
+            span: Span::new(BytePos(4), BytePos(7))
         }
     ]);
 
     assert_eq!(spans(".xxxx=="), vec![
         TokenSpan {
             tok: Dot,
-            span: Span { lo: BytePos(0), hi: BytePos(1) }
+            span: Span::new(BytePos(0), BytePos(1))
         },
         TokenSpan {
             tok: Ident("xxxx".into()),
-            span: Span { lo: BytePos(1), hi: BytePos(5) }
+            span: Span::new(BytePos(1), BytePos(5))
         },
         TokenSpan {
             tok: EqEq,
-            span: Span { lo: BytePos(5), hi: BytePos(7) }
+            span: Span::new(BytePos(5), BytePos(7))
         }
     ]);
 
     assert_eq!(spans("     !"), vec![
         TokenSpan {
             tok: Whitespace,
-            span: Span { lo: BytePos(0), hi: BytePos(5) }
+            span: Span::new(BytePos(0), BytePos(5))
         },
         TokenSpan {
             tok: Bang,
-            span: Span { lo: BytePos(5), hi: BytePos(6) }
+            span: Span::new(BytePos(5), BytePos(6))
         }
     ]);
 }

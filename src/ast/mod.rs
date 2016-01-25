@@ -86,7 +86,7 @@ impl Default for Ident {
     fn default() -> Self {
         Ident {
             name: "".into(),
-            span: Span { lo: BytePos(0), hi: BytePos(0) },
+            span: Span::dummy(),
         }
     }
 }
