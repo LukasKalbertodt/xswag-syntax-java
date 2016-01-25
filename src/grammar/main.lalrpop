@@ -10,7 +10,7 @@
 ///
 
 use ast;
-use ast::TypeExt;
+use ast::ItemExt;
 use lex::{Token, Keyword};
 use base::code::{BytePos, Span};
 use base::diag::Report;
@@ -280,13 +280,14 @@ NormalInterfaceDecl: ast::Interface = {
                     // there are special rules for inner types
 
                     // TODO: spans are confusing right now (from type name)
+                    // TODO: fix these stupid spans! For real now.
                     match t.vis() {
                         ast::Visibility::Private | ast::Visibility::Protected => {
                             errors.push(Report::simple_error(
                                 "a member type of an interface is always \
                                     public. You must not use `private` or \
                                     `protected` modifiers.",
-                                t.ident().span
+                                t.ident().map(|i| i.span).unwrap_or(Span::dummy())
                             ));
                         },
                         ast::Visibility::Public => {
@@ -294,7 +295,7 @@ NormalInterfaceDecl: ast::Interface = {
                                 "a member type of an interface is implicitly \
                                     public. You don't need to explicitly mark \
                                     it public.",
-                                t.ident().span
+                                t.ident().map(|i| i.span).unwrap_or(Span::dummy())
                             ));
                         }
                         _ => {},

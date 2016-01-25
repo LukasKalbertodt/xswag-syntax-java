@@ -1,6 +1,19 @@
 // TODO: Remove
 #![allow(dead_code)]
 
+// TODO: make this private again, once #18241 is fixed
+// https://github.com/rust-lang/rust/issues/18241
+pub mod item;
+
+pub use self::item::{
+    ItemExt,
+    Type,
+    Interface,
+    Class,
+    Field,
+    Method,
+};
+
 use std::fmt::{Display, Formatter, Error};
 use base::code::{BytePos, Span};
 use std::vec::Vec;
@@ -69,48 +82,6 @@ pub struct CompilationUnit {
     pub types: Vec<Type>,
 }
 
-#[derive(Debug, Clone)]
-pub enum Type {
-    NormalClass(Class),
-    // Enum(()),
-    NormalInterface(Interface),
-}
-
-pub trait TypeExt {
-    fn ident(&self) -> &Ident;
-    fn vis(&self) -> Visibility;
-    fn static_(&self) -> bool;
-}
-
-impl TypeExt for Type {
-    fn ident(&self) -> &Ident {
-        match *self {
-            Type::NormalClass(ref c) => c.ident(),
-            Type::NormalInterface(ref i) => i.ident(),
-        }
-    }
-    fn vis(&self) -> Visibility {
-        match *self {
-            Type::NormalClass(ref c) => c.vis(),
-            Type::NormalInterface(ref i) => i.vis(),
-        }
-    }
-    fn static_(&self) -> bool {
-        match *self {
-            Type::NormalClass(ref c) => c.static_(),
-            Type::NormalInterface(ref i) => i.static_(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Item {
-    Import(Import),
-    Class(Box<Class>),
-    Method(Box<Method>),
-}
-
-
 impl Default for Ident {
     fn default() -> Self {
         Ident {
@@ -139,36 +110,6 @@ pub enum Visibility {
     Private,
 }
 
-#[derive(Debug, Clone)]
-pub struct Interface {
-    pub name: Ident,
-    pub vis: Visibility,
-    pub static_: bool,
-    pub strictfp: bool,
-    pub extends: Vec<Path>,
-    pub types: Vec<Type>,
-}
-
-impl TypeExt for Interface {
-    fn ident(&self) -> &Ident { &self.name }
-    fn vis(&self) -> Visibility { self.vis }
-    fn static_(&self) -> bool { self.static_ }
-}
-
-#[derive(Debug, Clone)]
-pub struct Class {
-    pub name: Ident,
-    pub vis: Visibility,
-    pub methods: Vec<Method>,
-    pub fields: Vec<Field>,
-}
-
-impl TypeExt for Class {
-    fn ident(&self) -> &Ident { &self.name }
-    fn vis(&self) -> Visibility { self.vis }
-    fn static_(&self) -> bool { unimplemented!() }
-}
-
 pub enum TypeItem {
     Type(Type),
     // Method(()),
@@ -194,31 +135,3 @@ java_enum! (Modifier {
     Transient => "transient",
     Volatile => "volatile",
 });
-
-#[derive(Debug, Clone)]
-pub struct Field {
-    pub vis: Visibility,
-    pub static_: bool,
-    pub final_: bool,
-    pub ty: String,
-    pub name: Ident,
-    // pub init ...
-}
-
-#[derive(Debug, Clone)]
-pub struct Method {
-    pub vis: Visibility,
-    pub name: Ident,
-    pub ret_ty: Ident,
-    pub static_: bool,
-    pub final_: bool,
-    pub params: Vec<FormalParameter>,
-}
-
-#[derive(Debug, Clone)]
-pub struct FormalParameter {
-    pub ty: Ident,
-    pub name: Ident,
-    pub dims: usize,
-    pub final_: bool,
-}
