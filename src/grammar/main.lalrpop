@@ -16,6 +16,7 @@ use base::code::{BytePos, Span};
 use base::diag::Report;
 use lalrpop_util::ParseError;
 use super::{
+    check_allowed_modifier,
     get_visibility,
     find_static,
     find_strictfp,
@@ -256,20 +257,21 @@ NormalInterfaceDecl: ast::Interface = {
         <extends: ("extends" <Comma<InterfaceType>>)?>
         <body: InterfaceBody> =>
     {
+        check_mods!(errors, "interface", mods,
+            [Public, Private, Protected, Abstract, Static, Strictfp]
+        );
+
+
         // lookup visibility
         let vis = forward_reports(errors, || get_visibility(&mods));
 
         // check if unnecessary `abstract` keyword was specified
-        if forward_reports(errors, || find_abstract(&mods)) {
-            for &(lo, kw, hi) in &mods {
-                if kw == Keyword::Abstract {
-                    errors.push(Report::simple_warning(
-                        "interfaces are abstract by default. The `abstract` \
-                            modifier is obsolete -- better remove it.",
-                        Span { lo: lo, hi: hi }
-                    ));
-                }
-            }
+        if let Some(span) = find_abstract(&mods) {
+            errors.push(Report::simple_warning(
+                "interfaces are abstract by default. The `abstract` \
+                    modifier is obsolete -- better remove it.",
+                span
+            ));
         }
 
         // check body
@@ -304,15 +306,16 @@ NormalInterfaceDecl: ast::Interface = {
 
 
                     types.push(t);
-                }
+                },
+                _ => (),
             }
         }
 
         ast::Interface {
             name: name,
             vis: vis.unwrap_or(ast::Visibility::Package),
-            static_: forward_reports(errors, || find_static(&mods)),
-            strictfp: forward_reports(errors, || find_strictfp(&mods)),
+            static_: find_static(&mods).is_some(),
+            strictfp: find_strictfp(&mods).is_some(),
             extends: extends.unwrap_or(Vec::new()),
             types: types,
         }
@@ -324,10 +327,14 @@ InterfaceBody = "{" <InterfaceMemberDecl*> "}";
 
 // 9.1.4
 InterfaceMemberDecl: ast::TypeItem = {
-    // ConstantDecl => ,
+    ConstantDecl => ast::TypeItem::Constant(()),
     // InterfaceMethodDecl => ,
     InterfaceDecl => ast::TypeItem::Type(<>),
     // ClassDecl,
+};
+
+ConstantDecl = {
+    <Spanned<TypeModifier>*> "++" ";",
 };
 
 

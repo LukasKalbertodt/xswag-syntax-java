@@ -112,6 +112,7 @@ pub enum Visibility {
 
 pub enum TypeItem {
     Type(Type),
+    Constant(()),
     // Method(()),
 }
 

@@ -1,3 +1,13 @@
+macro_rules! check_mods {
+    ($errors:ident, $context:expr, $actual:ident, [$($allowed:ident),*] ) => {{
+        let allowed_mods = [$(Keyword::$allowed),*];
+        $errors.extend_from_slice(
+            &check_allowed_modifier(&$actual, &allowed_mods, $context)
+        );
+    }}
+}
+
+
 pub mod main;
 
 use ast;
@@ -5,7 +15,40 @@ use lex;
 use base::diag::Report;
 use base::code::{Span, BytePos};
 
+type Mods = [(BytePos, lex::Keyword, BytePos)];
+
 // some helper functions
+fn check_allowed_modifier(actual: &Mods, allowed: &[lex::Keyword], ctx: &str)
+    -> Vec<Report>
+{
+    let mut seen = Vec::new();
+    actual.iter().flat_map(|&(lo, m, hi)| {
+        let span = Span { lo: lo, hi: hi };
+
+        // check for duplicate modifiers
+        // let prev = seen.iter().find(|&&(_, hay)| hay == m);
+        let mut reps = if let Some(&(prev_span, _)) = seen.iter().find(|&&(_, hay)| hay == m) {
+            vec![Report::simple_error(
+                format!("duplicate `{:?}` modifier", m),
+                span,
+            ).with_span_note(
+                format!("the first `{:?}` modifier is already here", m),
+                prev_span,
+            )]
+        } else {
+            seen.push((span, m));
+            vec![]
+        };
+
+        // check if modifier is valid
+        if !allowed.contains(&m) {
+            let msg = format!("modifier `{}` is illegal in this context", m);
+            let note = format!("valid `{}` modifier are: {:?}", ctx, allowed);
+            reps.push(Report::simple_error(msg, span).with_note(note));
+        }
+        reps.into_iter()
+    }).collect()
+}
 
 fn get_visibility(mods: &Vec<(BytePos, lex::Keyword, BytePos)>)
 	-> (Option<ast::Visibility>, Vec<Report>)
@@ -17,7 +60,7 @@ fn get_visibility(mods: &Vec<(BytePos, lex::Keyword, BytePos)>)
     let mut errors = Vec::new();
 
 	for &(lo, modifier, hi) in mods {
-		// convert into more convinient type
+		// convert into more convenient type
 		let span = Span {
 			lo: lo,
 			hi: hi
@@ -53,49 +96,51 @@ fn get_visibility(mods: &Vec<(BytePos, lex::Keyword, BytePos)>)
     (vis, errors)
 }
 
+
 macro_rules! gen_finder {
     ($name:ident, $keyword:ident, $msg:expr) => {
-        fn $name(mods: &Vec<(BytePos, lex::Keyword, BytePos)>)
-            -> (bool, Vec<Report>)
-        {
-            let mut found = false;
-            let mut first_pos = None;
-            let mut reports = Vec::new();
+        /// Returns if the modifier for the given property is in the list of
+        /// modifiers. Does NOT check duplicate modifier.
+        fn $name(mods: &Mods) -> Option<Span> {
+            mods.iter()
+                .find(|&&(_, m, _)| m == lex::Keyword::$keyword)
+                .map(|&(lo, _, hi)| Span { lo: lo, hi: hi })
+            // let mut found = false;
 
-            for &(lo, modifier, hi) in mods {
-                // convert into more convinient type
-                let span = Span {
-                    lo: lo,
-                    hi: hi
-                };
+            // for &(lo, modifier, hi) in mods {
+            //     // convert into more convenient type
+            //     let span = Span {
+            //         lo: lo,
+            //         hi: hi
+            //     };
 
-                match modifier {
-                    lex::Keyword::$keyword => {
-                        // check if there was a visibility modifier before
-                        // this one
-                        if let Some(prev_span) = first_pos {
-                            let e = Report::simple_error(
-                                stringify!("duplicate `" $msg "` modifier"),
-                                span
-                            ).with_span_note(
-                                stringify!(
-                                    "the first `"
-                                    $msg
-                                    "` modifier is already here"
-                                ),
-                                prev_span
-                            );
-                            reports.push(e);
-                        } else {
-                            first_pos = Some(span);
-                            found = true;
-                        }
-                    },
-                    _ => {},
-                }
-            }
+            //     match modifier {
+            //         lex::Keyword::$keyword => {
+            //             // check if there was a visibility modifier before
+            //             // this one
+            //             if let Some(prev_span) = first_pos {
+            //                 let e = Report::simple_error(
+            //                     stringify!("duplicate `" $msg "` modifier"),
+            //                     span
+            //                 ).with_span_note(
+            //                     stringify!(
+            //                         "the first `"
+            //                         $msg
+            //                         "` modifier is already here"
+            //                     ),
+            //                     prev_span
+            //                 );
+            //                 reports.push(e);
+            //             } else {
+            //                 first_pos = Some(span);
+            //                 found = true;
+            //             }
+            //         },
+            //         _ => {},
+            //     }
+            // }
 
-            (found, reports)
+            // (found, reports)
         }
     }
 }

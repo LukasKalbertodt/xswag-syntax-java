@@ -79,6 +79,7 @@ pub enum Item {
     Import(Import),
     Class(Box<Class>),
     Method(Box<Method>),
+    Constant(()),
 }
 
 
