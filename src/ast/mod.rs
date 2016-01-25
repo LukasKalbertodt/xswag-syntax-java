@@ -12,6 +12,7 @@ pub use self::item::{
     Class,
     Field,
     Method,
+    TypeItem,
 };
 
 use std::fmt::{Display, Formatter, Error};
@@ -108,12 +109,6 @@ pub enum Visibility {
     Protected,
     Package,
     Private,
-}
-
-pub enum TypeItem {
-    Type(Type),
-    Constant(()),
-    // Method(()),
 }
 
 #[derive(Debug, Clone)]

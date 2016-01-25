@@ -84,6 +84,13 @@ pub enum Item {
 
 
 
+pub enum TypeItem {
+    Type(Type),
+    Constant(Field),
+    // Method(()),
+}
+
+
 #[derive(Debug, Clone)]
 pub struct Interface {
     pub name: Ident,
@@ -92,6 +99,7 @@ pub struct Interface {
     pub strictfp: bool,
     pub extends: Vec<Path>,
     pub types: Vec<Type>,
+    pub constants: Vec<Field>,
 }
 
 impl ItemExt for Interface {

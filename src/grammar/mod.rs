@@ -15,16 +15,14 @@ use lex;
 use base::diag::Report;
 use base::code::{Span, BytePos};
 
-type Mods = [(BytePos, lex::Keyword, BytePos)];
+type Mods = [(lex::Keyword, Span)];
 
 // some helper functions
 fn check_allowed_modifier(actual: &Mods, allowed: &[lex::Keyword], ctx: &str)
     -> Vec<Report>
 {
     let mut seen = Vec::new();
-    actual.iter().flat_map(|&(lo, m, hi)| {
-        let span = Span::new(lo, hi);
-
+    actual.iter().flat_map(|&(m, span)| {
         // check for duplicate modifiers
         let mut reps = Vec::new();
         if let Some(&(prev_span, _)) = seen.iter().find(|&&(_, hay)| hay == m) {
@@ -57,10 +55,7 @@ fn get_visibility(mods: &Mods, errors: &mut Vec<Report>)
     let mut vis = None;
     let mut first_vis = None;
 
-	for &(lo, modifier, hi) in mods {
-		// convert into more convenient type
-		let span = Span::new(lo, hi);
-
+	for &(modifier, span) in mods {
         match modifier {
             Keyword::Public | Keyword::Private | Keyword::Protected => {
                 // check if there was a visibility modifier before this one
@@ -96,8 +91,8 @@ macro_rules! gen_finder {
         /// modifiers. Does NOT check duplicate modifier.
         fn $name(mods: &Mods) -> Option<Span> {
             mods.iter()
-                .find(|&&(_, m, _)| m == lex::Keyword::$keyword)
-                .map(|&(lo, _, hi)| Span::new(lo, hi))
+                .find(|&&(m, _)| m == lex::Keyword::$keyword)
+                .map(|&(_, span)| span)
         }
     }
 }

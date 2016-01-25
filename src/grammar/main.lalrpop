@@ -159,7 +159,9 @@ Comma<T>: Vec<T> = {
 };
 
 #[inline]
-Spanned<T> = { @L T @R };
+Spanned<T>: (T, Span) = {
+    <l:@L> <t:T> <r:@R> => (t, Span::new(l, r)),
+};
 
 
 // ===========================================================================
@@ -270,7 +272,9 @@ NormalInterfaceDecl: ast::Interface = {
 
         // check body
         let mut types = Vec::new();
-        for item in body {
+        let mut constants = Vec::new();
+
+        for item in body.into_iter().flat_map(|v| v) {
             match item {
                 ast::TypeItem::Type(t) => {
                     // there are special rules for inner types
@@ -301,7 +305,9 @@ NormalInterfaceDecl: ast::Interface = {
 
                     types.push(t);
                 },
-                _ => (),
+                ast::TypeItem::Constant(c) => {
+                    constants.push(c);
+                },
             }
         }
 
@@ -312,27 +318,45 @@ NormalInterfaceDecl: ast::Interface = {
             strictfp: get_strictfp(&mods).is_some(),
             extends: extends.unwrap_or(Vec::new()),
             types: types,
+            constants: constants,
         }
     }
 };
 
-// 9.1.4 TODO
+// 9.1.4
 InterfaceBody = "{" <InterfaceMemberDecl*> "}";
 
-// 9.1.4
-InterfaceMemberDecl: ast::TypeItem = {
-    ConstantDecl => ast::TypeItem::Constant(()),
+// 9.1.4 TODO
+InterfaceMemberDecl: Vec<ast::TypeItem> = {
+    ConstantDecl => {
+        <>.into_iter().map(|f| ast::TypeItem::Constant(f)).collect()
+    },
     // InterfaceMethodDecl => ,
-    InterfaceDecl => ast::TypeItem::Type(<>),
+    InterfaceDecl => vec![ast::TypeItem::Type(<>)],
     // ClassDecl,
 };
 
-ConstantDecl = {
-    <Spanned<Modifier>*> "++" ";",
+ConstantDecl: Vec<ast::Field> = {
+    <mods: Spanned<Modifier>*>
+    <ty: UnannType>
+    <var_decls: VariableDeclaratorList> ";" => {
+        check_mods!(errors, "constant", mods, [Public, Static, Final]);
+
+        var_decls.into_iter().map(|var_decl| {
+            ast::Field {
+                vis: ast::Visibility::Public,
+                static_: true,
+                final_: true,
+                ty: "TODO".into(),
+                name: var_decl,
+            }
+        }).collect()
+    }
 };
 
 
 // ---------------------------------------------------------------------------
+
 
 // 8.1 ClassDeclaration TODO
 ClassDecl: ast::Type = {
@@ -476,18 +500,22 @@ FieldModifier = {
     "final",
 };
 
+// 8.3 TODO
 UnannType = "%";
 
+// 8.3
 VariableDeclaratorList = Comma<VariableDeclarator>;
 
+// 8.3 TODO
 VariableDeclarator = {
-    // VariableDeclaratorId ("=" <VariableInitializer>)?
-    VariableDeclaratorId
+    <VariableDeclaratorId> ("=" <VariableInitializer>)?
 };
 
+// 8.3 TODO
 VariableDeclaratorId = {
     // <id: Ident> <dims: Dims?>;
     Ident
 };
 
+// 8.3 TODO
 VariableInitializer = "~";
