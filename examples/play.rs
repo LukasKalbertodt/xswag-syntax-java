@@ -17,7 +17,8 @@ public private class Cheese {
 public abstract interface Bread extends Food, java.lang.Comparable {
 	interface Inner {}
 
-	float PI = ~; 
+	float PI = ~;
+	java.lang.Integer[] BUFFER = ~;
 
 }
 

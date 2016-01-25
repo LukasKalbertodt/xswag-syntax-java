@@ -66,13 +66,32 @@ pub struct Path {
     pub segments: Vec<Ident>,
 }
 
+impl Path {
+    pub fn single(name: Ident) -> Path {
+        Path {
+            segments: vec![name],
+        }
+    }
+
+    pub fn span(&self) -> Option<Span> {
+        match (self.segments.first(), self.segments.last()) {
+            (Some(first), Some(last)) => Some(Span {
+                lo: first.span.lo,
+                hi: last.span.hi
+            }),
+            _ => None,
+        }
+    }
+}
+
 // pub struct PathSegment {
 
 // }
 
 #[derive(Debug, Clone)]
 pub struct Type {
-    pub name: Ident,
+    pub name: Path,
+    pub dims: u16,
 }
 
 

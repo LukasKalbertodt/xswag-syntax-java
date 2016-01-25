@@ -501,28 +501,46 @@ FieldModifier = {
 };
 
 // 8.3 TODO
-UnannType = UnannTypeWithoutDim;
-
-UnannTypeWithoutDim: ast::Type = {
-    Spanned<NumericType> => ast::Type {
-        name: ast::Ident {
-            name: <>.0.to_string(),
-            span: <>.1,
-        }
-    },
-    Spanned<"boolean"> => ast::Type {
-        name: ast::Ident {
-            name: "boolean".into(),
-            span: <>.1,
-        }
-    },
-    // UnannClassOrInterfaceType
-    UnannTypeVariable => ast::Type {
-        name: <>,
-    },
+UnannType: ast::Type = {
+    <ty: UnannTypeWithoutDim> <dims: Dims?> => {
+        let mut ty = ty;
+        ty.dims = dims.unwrap_or(0);
+        ty
+    }
 };
 
-UnannTypeVariable = Ident;
+// ~8.3 GENE, ANNO
+UnannTypeWithoutDim: ast::Type = {
+    // UnannPrimitiveType >> NumericType
+    Spanned<NumericType> => ast::Type {
+        name: ast::Path::single(ast::Ident {
+            name: <>.0.to_string(),
+            span: <>.1,
+        }),
+        dims: 0,
+    },
+    // UnannPrimitiveType >> "boolean"
+    Spanned<"boolean"> => ast::Type {
+        name: ast::Path::single(ast::Ident {
+            name: "boolean".into(),
+            span: <>.1,
+        }),
+        dims: 0,
+    },
+    // UnannReferenceType >> UnannClassOrInterfaceType GENE, ANNO
+    Path => ast::Type {
+        name: <>,
+        dims: 0,
+    }
+
+    // GENE: put this in again
+    // UnannTypeVariable => ast::Type {
+    //     name: <>,
+    // },
+};
+
+// 8.3 GENE
+// UnannTypeVariable = Ident;
 
 
 
@@ -573,4 +591,21 @@ IntegralType = {
 FloatingPointType = {
     "float",
     "double",
+};
+
+// 4.3 ANNO
+Dims: u16 = {
+    <l:@L> <dims: ("[" "]")+> <r:@R> =>? {
+        if dims.len() > u16::max_value() as usize {
+            Err(ParseError::User {
+                error: Report::simple_error(
+                    format!("too many dimensions! Do you really need a {} \
+                        dimensional array?", dims.len()),
+                    Span::new(l, r),
+                )
+            })
+        } else {
+            Ok(dims.len() as u16)
+        }
+    } ,
 };
