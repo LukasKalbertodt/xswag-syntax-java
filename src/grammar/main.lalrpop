@@ -252,10 +252,11 @@ InterfaceDecl: ast::TypeDef = {
     // TODO: AnnotationTypeDeclaration
 };
 
-// 9.1
+// 9.1 GENE
 NormalInterfaceDecl: ast::Interface = {
     <mods: Spanned<Modifier>*>
         "interface" <name: Ident>
+        // GENE: type parameters
         <extends: ("extends" <Comma<InterfaceType>>)?>
         <body: InterfaceBody> =>
     {
@@ -345,7 +346,6 @@ InterfaceMemberDecl: Vec<ast::TypeItem> = {
 };
 
 // 9.3
-#[inline]
 ConstantDecl: Vec<ast::Field> = {
     <mods: Spanned<Modifier>*>
     <ty: UnannType>
@@ -368,7 +368,6 @@ ConstantDecl: Vec<ast::Field> = {
 };
 
 // 9.4 TODO
-#[inline]
 InterfaceMethodDecl: ast::Method = {
     <mods: Spanned<Modifier>*> <header: MethodHeader> <body: MethodBody> => {
         check_mods!(errors, "interface-method", mods,
@@ -609,7 +608,6 @@ VariableDeclaratorId = {
 VariableInitializer = "~";
 
 // 8.4 GENE ANNO
-#[inline]
 MethodHeader: (ast::Type, ast::Ident) = {
     <ret: Result> <decl: MethodDeclarator> <throws: Throws?> => {
         let mut ret_ty = ret;
