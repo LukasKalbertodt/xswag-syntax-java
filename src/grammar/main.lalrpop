@@ -160,13 +160,9 @@ Comma<T>: Vec<T> = {
 };
 
 #[inline]
-Spanned<T>: (T, Span) = {
-    <l:@L> <t:T> <r:@R> => (t, Span::new(l, r)),
+Spanned<T>: ast::Spanned<T> = {
+    <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
 };
-
-// Spanned<T>: (T, Span) = {
-//     <t:T> => (t, ()),
-// };
 
 // ===========================================================================
 // Helper grammar definitions that are used in several sections
@@ -189,8 +185,8 @@ Modifier: Keyword = {
 
 Ident: ast::Ident = {
     <w: Spanned<Word>> => ast::Ident {
-        name: w.0,
-        span: w.1,
+        name: w.inner,
+        span: w.span,
      }
 };
 
@@ -457,9 +453,9 @@ FieldDecl: Vec<ast::Field> = {
     <ty: UnannType> <decls: VariableDeclaratorList> ";"
         =>? {
         // unwrap keywords from token
-        let mods: Vec<_> = mods.iter().map(|&(ref t, span)|
+        let mods: Vec<_> = mods.iter().map(|&ast::Spanned { ref inner, span }|
             (
-                if let &Token::KeyW(m) = t { m } else { unreachable!() },
+                if let &Token::KeyW(m) = inner { m } else { unreachable!() },
                 span,
             )
         ).collect();
@@ -564,8 +560,8 @@ UnannTypeWithoutDim: ast::Type = {
     // UnannPrimitiveType >> NumericType
     Spanned<NumericType> => ast::Type {
         name: ast::Path::single(ast::Ident {
-            name: <>.0.to_string(),
-            span: <>.1,
+            name: <>.inner.to_string(),
+            span: <>.span,
         }),
         dims: 0,
     },
@@ -573,7 +569,7 @@ UnannTypeWithoutDim: ast::Type = {
     Spanned<"boolean"> => ast::Type {
         name: ast::Path::single(ast::Ident {
             name: "boolean".into(),
-            span: <>.1,
+            span: <>.span,
         }),
         dims: 0,
     },
@@ -635,20 +631,11 @@ Result = {
     Spanned<"void"> => ast::Type {
         name: ast::Path::single(ast::Ident {
             name: "void".into(),
-            span: <>.1,
+            span: <>.span,
         }),
         dims: 0,
     },
 };
-// Result: ast::Type = {
-//     Ident => st::Type {
-//         name: ast::Path::single(ast::Ident {
-//             name: "void".into(),
-//             span: <>.1,
-//         }),
-//         dims: 0,
-//     },
-// };
 
 // 8.4.6 TODO GENE
 Throws = "throws";
@@ -690,17 +677,19 @@ FloatingPointType = {
 // 4.3 ANNO
 Dims: u16 = {
     <dims: Spanned<("[" "]")+>> =>? {
-        let (dims, span) = dims;
-        if dims.len() > u16::max_value() as usize {
+        if dims.inner.len() > u16::max_value() as usize {
             Err(ParseError::User {
                 error: Report::simple_error(
-                    format!("too many dimensions! Do you really need a {} \
-                        dimensional array?", dims.len()),
-                    span,
+                    format!(
+                        "too many dimensions! Do you really need a {} \
+                            dimensional array?",
+                        dims.inner.len(),
+                    ),
+                    dims.span,
                 )
             })
         } else {
-            Ok(dims.len() as u16)
+            Ok(dims.inner.len() as u16)
         }
     } ,
 };

@@ -15,33 +15,39 @@ use lex;
 use base::diag::Report;
 use base::code::{Span, BytePos};
 
-type Mods = [(lex::Keyword, Span)];
+type Mods = [ast::Spanned<lex::Keyword>];
 
 // some helper functions
 fn check_allowed_modifier(actual: &Mods, allowed: &[lex::Keyword], ctx: &str)
     -> Vec<Report>
 {
-    let mut seen = Vec::new();
-    actual.iter().flat_map(|&(m, span)| {
-        // check for duplicate modifiers
+    let mut seen: Vec<ast::Spanned<lex::Keyword>> = Vec::new();
+    actual.iter().flat_map(|&m| {
+        // collect all reports
         let mut reps = Vec::new();
-        if let Some(&(prev_span, _)) = seen.iter().find(|&&(_, hay)| hay == m) {
+
+        // check for duplicate modifiers
+        let dupe = seen
+            .iter()
+            .find(|hay| hay.inner == m.inner)
+            .map(|m| m.span);
+        if let Some(prev_span) = dupe {
             reps.push(Report::simple_error(
-                format!("duplicate `{:?}` modifier", m),
-                span,
+                format!("duplicate `{:?}` modifier", m.inner),
+                m.span,
             ).with_span_note(
-                format!("the first `{:?}` modifier is already here", m),
+                format!("the first `{:?}` modifier is already here", m.inner),
                 prev_span,
             ));
         } else {
-            seen.push((span, m));
+            seen.push(m);
         }
 
         // check if modifier is valid
-        if !allowed.contains(&m) {
-            let msg = format!("modifier `{}` is illegal in this context", m);
+        if !allowed.contains(&m.inner) {
+            let msg = format!("modifier `{}` is illegal in this context", m.inner);
             let note = format!("valid `{}` modifier are: {:?}", ctx, allowed);
-            reps.push(Report::simple_error(msg, span).with_note(note));
+            reps.push(Report::simple_error(msg, m.span).with_note(note));
         }
         reps.into_iter()
     }).collect()
@@ -55,7 +61,7 @@ fn get_visibility(mods: &Mods, errors: &mut Vec<Report>)
     let mut vis = None;
     let mut first_vis = None;
 
-    for &(modifier, span) in mods {
+    for &ast::Spanned { inner: modifier, span } in mods {
         match modifier {
             Keyword::Public | Keyword::Private | Keyword::Protected => {
                 // check if there was a visibility modifier before this one
@@ -91,8 +97,8 @@ macro_rules! gen_finder {
         /// modifiers. Does NOT check duplicate modifier.
         fn $name(mods: &Mods) -> Option<Span> {
             mods.iter()
-                .find(|&&(m, _)| m == lex::Keyword::$keyword)
-                .map(|&(_, span)| span)
+                .find(|m| m.inner == lex::Keyword::$keyword)
+                .map(|m| m.span)
         }
     }
 }

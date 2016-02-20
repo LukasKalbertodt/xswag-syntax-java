@@ -20,6 +20,7 @@ use base::code::{BytePos, Span};
 use std::vec::Vec;
 use std::default::Default;
 use std::fmt;
+use std::marker;
 
 macro_rules! java_enum { (
     $name:ident { $( $variant:ident => $java_word:expr, )* }
@@ -47,6 +48,14 @@ macro_rules! java_enum { (
 // ============================================================================
 // Definition of types that are common in AST nodes
 // ============================================================================
+#[derive(Clone, Debug)]
+pub struct Spanned<T: Clone + fmt::Debug> {
+    pub inner: T,
+    pub span: Span,
+}
+
+impl<T> marker::Copy for Spanned<T> where T: Copy + fmt::Debug {}
+
 #[derive(Clone)]
 pub struct Ident {
     pub name: String,
