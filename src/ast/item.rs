@@ -88,7 +88,7 @@ pub enum Item {
 pub enum TypeItem {
     Type(TypeDef),
     Constant(Field),
-    // Method(()),
+    Method(Method),
 }
 
 
@@ -101,6 +101,7 @@ pub struct Interface {
     pub extends: Vec<Path>,
     pub types: Vec<TypeDef>,
     pub constants: Vec<Field>,
+    pub methods: Vec<Method>,
 }
 
 impl ItemExt for Interface {
@@ -138,9 +139,12 @@ pub struct Field {
 pub struct Method {
     pub vis: Visibility,
     pub name: Ident,
-    pub ret_ty: Ident,
+    pub ret_ty: Type,
     pub static_: bool,
     pub final_: bool,
+    pub strictfp: bool,
+    pub abstract_: bool,
+    pub default: bool,
     pub params: Vec<FormalParameter>,
 }
 

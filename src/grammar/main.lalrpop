@@ -21,6 +21,7 @@ use super::{
     get_static,
     get_strictfp,
     get_abstract,
+    get_default,
 };
 
 grammar(errors: &mut Vec<Report>);
@@ -163,6 +164,9 @@ Spanned<T>: (T, Span) = {
     <l:@L> <t:T> <r:@R> => (t, Span::new(l, r)),
 };
 
+// Spanned<T>: (T, Span) = {
+//     <t:T> => (t, ()),
+// };
 
 // ===========================================================================
 // Helper grammar definitions that are used in several sections
@@ -175,6 +179,8 @@ ModifierImpl = {
     "abstract",
     "static",
     "final",
+    "synchronized",
+    "native",
     "strictfp",
 };
 Modifier: Keyword = {
@@ -182,9 +188,9 @@ Modifier: Keyword = {
 };
 
 Ident: ast::Ident = {
-    <l:@L> <w:Word> <r:@R>  => ast::Ident {
-        name: w,
-        span: Span::new(l, r),
+    <w: Spanned<Word>> => ast::Ident {
+        name: w.0,
+        span: w.1,
      }
 };
 
@@ -273,6 +279,7 @@ NormalInterfaceDecl: ast::Interface = {
         // check body
         let mut types = Vec::new();
         let mut constants = Vec::new();
+        let mut methods = Vec::new();
 
         for item in body.into_iter().flat_map(|v| v) {
             match item {
@@ -308,6 +315,9 @@ NormalInterfaceDecl: ast::Interface = {
                 ast::TypeItem::Constant(c) => {
                     constants.push(c);
                 },
+                ast::TypeItem::Method(m) => {
+                    methods.push(m);
+                },
             }
         }
 
@@ -319,6 +329,7 @@ NormalInterfaceDecl: ast::Interface = {
             extends: extends.unwrap_or(Vec::new()),
             types: types,
             constants: constants,
+            methods: methods,
         }
     }
 };
@@ -327,16 +338,18 @@ NormalInterfaceDecl: ast::Interface = {
 InterfaceBody = "{" <InterfaceMemberDecl*> "}";
 
 // 9.1.4 TODO
+#[inline]
 InterfaceMemberDecl: Vec<ast::TypeItem> = {
     ConstantDecl => {
         <>.into_iter().map(|f| ast::TypeItem::Constant(f)).collect()
     },
-    // InterfaceMethodDecl => ,
+    InterfaceMethodDecl => vec![ast::TypeItem::Method(<>)],
     InterfaceDecl => vec![ast::TypeItem::Type(<>)],
-    // ClassDecl,
+    // ClassDecl => vec![ast::TypeItem::Type(<>)]
 };
 
 // 9.3
+#[inline]
 ConstantDecl: Vec<ast::Field> = {
     <mods: Spanned<Modifier>*>
     <ty: UnannType>
@@ -358,6 +371,39 @@ ConstantDecl: Vec<ast::Field> = {
     }
 };
 
+// 9.4 TODO
+#[inline]
+InterfaceMethodDecl: ast::Method = {
+    <mods: Spanned<Modifier>*> <header: MethodHeader> <body: MethodBody> => {
+        check_mods!(errors, "interface-method", mods,
+            [Public, Abstract, Default, Static, Strictfp]
+        );
+
+        let (ret_ty, name) = header;
+
+        let is_static = get_static(&mods);
+        let is_default = get_default(&mods);
+        let is_abstract = get_abstract(&mods);
+
+        // TODO: Check if more than one of static/default/abstract is set [E]
+        // TODO: Check if abstract is combined with strictfp [E]
+        // TODO: Add "public" useless modifier warning
+        // TODO: Add "abstract" useless modifier warning
+
+        ast::Method {
+            vis: ast::Visibility::Public,
+            name: name,
+            ret_ty: ret_ty,
+            static_: is_static.is_some(),
+            final_: false,
+            strictfp: get_strictfp(&mods).is_some(),
+            abstract_: is_abstract.is_some(),
+            default: is_default.is_some(),
+            params: vec![],
+        }
+    }
+};
+
 
 // ---------------------------------------------------------------------------
 
@@ -371,7 +417,7 @@ ClassDecl: ast::TypeDef = {
 // 8.1 NormalClassDeclaration TODO
 NormalClassDecl: ast::Class = {
     <modifier: Spanned<Modifier>*>
-    "class" <l:@L> <class_name: Ident> <r:@R>
+    "class" <class_name: Ident>
     <body: ClassBody> =>? {
         // check modifier
         Ok(ast::Class {
@@ -407,14 +453,14 @@ ClassMemberDecl = {
 
 // 8.3 TODO
 FieldDecl: Vec<ast::Field> = {
-    <mods: (<@L> <FieldModifier> <@R>)*>
+    <mods: Spanned<FieldModifier>*>
     <ty: UnannType> <decls: VariableDeclaratorList> ";"
         =>? {
         // unwrap keywords from token
-        let mods: Vec<_> = mods.iter().map(|&(lo, ref t, hi)|
+        let mods: Vec<_> = mods.iter().map(|&(ref t, span)|
             (
                 if let &Token::KeyW(m) = t { m } else { unreachable!() },
-                Span::new(lo, hi),
+                span,
             )
         ).collect();
 
@@ -566,6 +612,50 @@ VariableDeclaratorId = {
 // 8.3 TODO
 VariableInitializer = "~";
 
+// 8.4 GENE ANNO
+#[inline]
+MethodHeader: (ast::Type, ast::Ident) = {
+    <ret: Result> <decl: MethodDeclarator> <throws: Throws?> => {
+        let mut ret_ty = ret;
+        ret_ty.dims += decl.1.unwrap_or(0);
+
+        (ret_ty, decl.0)
+    }
+};
+
+// 8.4 TODO
+MethodDeclarator = {
+    <Ident> "(" ")" <Dims?>
+};
+
+// 8.4.5 TODO
+#[inline]
+Result = {
+    UnannType,
+    Spanned<"void"> => ast::Type {
+        name: ast::Path::single(ast::Ident {
+            name: "void".into(),
+            span: <>.1,
+        }),
+        dims: 0,
+    },
+};
+// Result: ast::Type = {
+//     Ident => st::Type {
+//         name: ast::Path::single(ast::Ident {
+//             name: "void".into(),
+//             span: <>.1,
+//         }),
+//         dims: 0,
+//     },
+// };
+
+// 8.4.6 TODO GENE
+Throws = "throws";
+
+// 8.4.7 TODO
+MethodBody = ";";
+
 
 // ---------------------------------------------------------------------------
 // ~~~ Section 4 [ANNO, -] ~~~
@@ -599,13 +689,14 @@ FloatingPointType = {
 
 // 4.3 ANNO
 Dims: u16 = {
-    <l:@L> <dims: ("[" "]")+> <r:@R> =>? {
+    <dims: Spanned<("[" "]")+>> =>? {
+        let (dims, span) = dims;
         if dims.len() > u16::max_value() as usize {
             Err(ParseError::User {
                 error: Report::simple_error(
                     format!("too many dimensions! Do you really need a {} \
                         dimensional array?", dims.len()),
-                    Span::new(l, r),
+                    span,
                 )
             })
         } else {
