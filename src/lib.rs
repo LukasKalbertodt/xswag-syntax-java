@@ -20,7 +20,7 @@ pub fn parse_compilation_unit(file: &base::code::FileMap)
 
     let mut errors = Vec::new();
 
-    let res = grammar::main::parse_CompilationUnit(&mut errors, lexer);
+    let res = grammar::java8::parse_CompilationUnit(&mut errors, lexer);
     let res = res.map_err(|e| match e {
         ParseError::User { error: e } => e,
         ParseError::InvalidToken { location: loc } => {

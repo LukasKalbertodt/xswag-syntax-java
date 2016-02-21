@@ -8,7 +8,7 @@ macro_rules! check_mods {
 }
 
 
-pub mod main;
+pub mod java8;
 
 use ast;
 use lex;
