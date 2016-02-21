@@ -342,7 +342,7 @@ InterfaceMemberDecl: Vec<ast::TypeItem> = {
     },
     InterfaceMethodDecl => vec![ast::TypeItem::Method(<>)],
     InterfaceDecl => vec![ast::TypeItem::Type(<>)],
-    // ClassDecl => vec![ast::TypeItem::Type(<>)]
+    ClassDecl => vec![ast::TypeItem::Type(<>)],
 };
 
 // 9.3
@@ -374,7 +374,7 @@ InterfaceMethodDecl: ast::Method = {
             [Public, Abstract, Default, Static, Strictfp]
         );
 
-        let (ret_ty, name) = header;
+        let (ret_ty, name, params) = header;
 
         let is_static = get_static(&mods);
         let is_default = get_default(&mods);
@@ -394,7 +394,7 @@ InterfaceMethodDecl: ast::Method = {
             strictfp: get_strictfp(&mods).is_some(),
             abstract_: is_abstract.is_some(),
             default: is_default.is_some(),
-            params: vec![],
+            params: params,
         }
     }
 };
@@ -608,18 +608,38 @@ VariableDeclaratorId = {
 VariableInitializer = "~";
 
 // 8.4 GENE ANNO
-MethodHeader: (ast::Type, ast::Ident) = {
+MethodHeader: (ast::Type, ast::Ident, Vec<ast::FormalParameter>) = {
     <ret: Result> <decl: MethodDeclarator> <throws: Throws?> => {
         let mut ret_ty = ret;
-        ret_ty.dims += decl.1.unwrap_or(0);
+        ret_ty.dims += decl.2.unwrap_or(0);
 
-        (ret_ty, decl.0)
+        (ret_ty, decl.0, decl.1.unwrap_or(vec![]))
     }
 };
 
 // 8.4 TODO
 MethodDeclarator = {
-    <Ident> "(" ")" <Dims?>
+    <Ident> "(" <FormalParameterList?> ")" <Dims?>
+};
+
+// 8.4.1 TODO
+FormalParameterList = {
+    Comma<FormalParameter>,
+    // TODO: LastParameter (...)
+    // TODO: ReceiverParameter
+};
+
+// 8.4.1 ANNO
+FormalParameter: ast::FormalParameter = {
+    <final_: "final"?> <ty: UnannType> <id: VariableDeclaratorId> => {
+        let mut ty = ty;
+        ty.dims += id.1.unwrap_or(0);
+        ast::FormalParameter {
+            ty: ty,
+            name: id.0,
+            final_: final_.is_some(),
+        }
+    }
 };
 
 // 8.4.5 TODO

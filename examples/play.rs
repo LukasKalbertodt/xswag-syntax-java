@@ -20,7 +20,7 @@ public abstract interface Bread extends Food, java.lang.Comparable {
     float PI = ~;
     java.lang.Integer[] BUFFER = ~;
 
-    public int getFoo();
+    public int getFoo(int x, float y);
 
 }
 

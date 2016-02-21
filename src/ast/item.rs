@@ -150,8 +150,7 @@ pub struct Method {
 
 #[derive(Debug, Clone)]
 pub struct FormalParameter {
-    pub ty: Ident,
+    pub ty: Type,
     pub name: Ident,
-    pub dims: usize,
     pub final_: bool,
 }

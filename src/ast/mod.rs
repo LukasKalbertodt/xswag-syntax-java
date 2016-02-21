@@ -13,6 +13,7 @@ pub use self::item::{
     Field,
     Method,
     TypeItem,
+    FormalParameter,
 };
 
 use std::fmt::{Display, Formatter, Error};
