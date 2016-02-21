@@ -17,12 +17,14 @@ use base::diag::Report;
 use lalrpop_util::ParseError;
 use super::{
     check_allowed_modifier,
-    get_visibility,
-    get_static,
-    get_final,
-    get_strictfp,
     get_abstract,
     get_default,
+    get_final,
+    get_native,
+    get_static,
+    get_strictfp,
+    get_synchronized,
+    get_visibility,
 };
 
 grammar(errors: &mut Vec<Report>);
@@ -394,6 +396,8 @@ InterfaceMethodDecl: ast::Method = {
             final_: false,
             strictfp: get_strictfp(&mods).is_some(),
             abstract_: is_abstract.is_some(),
+            native: false,
+            synchronized: false,
             default: is_default.is_some(),
             params: params,
             block: body,
@@ -542,13 +546,11 @@ VariableDeclaratorId = {
 // 8.3 TODO
 VariableInitializer = "~";
 
-// 8.4 ANNO TODO
+// 8.4 ANNO
 MethodDecl: ast::Method = {
-    <mods: Spanned<Modifier>*> <header: MethodHeader> <body: MethodBody> => {
-        check_mods!(errors, "class-method", mods, [
-                Public, Protected, Private, Abstract, Static, Final,
-                Synchronized, Native, Strictfp
-            ]
+    <mods: Spanned<Modifier>*> <header: MethodHeader> <body: Spanned<MethodBody>> => {
+        check_mods!(errors, "class-method", mods,
+            [Public, Protected, Private, Abstract, Static, Final, Synchronized, Native, Strictfp]
         );
 
         let (ret_ty, name, params) = header;
@@ -556,28 +558,65 @@ MethodDecl: ast::Method = {
         let is_static = get_static(&mods);
         let is_final = get_final(&mods);
         let is_abstract = get_abstract(&mods);
+        let is_native = get_native(&mods);
+        let is_strictfp = get_strictfp(&mods);
+        let is_syncronized = get_synchronized(&mods);
         let vis = get_visibility(&mods, errors);
 
-        // TODO: modifier checks
+        // E: abstract + method body
+        if let (Some(abstract_span), true) = (is_abstract, body.inner.is_some()) {
+            errors.push(Report::simple_error(
+                "an abstract method must not provide a method body",
+                body.span,
+            ).with_span_note(
+                "method was declared `abstract` here",
+                abstract_span,
+            ));
+        }
 
-        // TOOD:
-        // It is a compile-time error if a method declaration that contains the
-        //     keyword abstract also contains any one of the keywords private,
-        //     static, final, native, strictfp, or synchronized.
-        // It is a compile-time error if a method declaration that contains the
-        //     keyword native also contains strictfp.
+        // E: native + method body
+        if let (Some(native_span), true) = (is_native, body.inner.is_some()) {
+            errors.push(Report::simple_error(
+                "a native method must not provide a method body",
+                body.span,
+            ).with_span_note(
+                "method was declared `native` here",
+                native_span,
+            ));
+        }
+
+        // E: `abstract` paired with one of [private, static, final, native,
+        // strictfp, synchronized]
+        if is_abstract.is_some() {
+            check_mods!(errors, "abstract class-method", mods,
+                [Public, Protected, Abstract]
+            );
+        }
+
+        // E: `native` cannot be paired with `strictfp`
+        if let (Some(native_span), Some(strictfp_span)) = (is_native, is_strictfp) {
+            errors.push(Report::simple_error(
+                "the `strictfp` modifier cannot be paired with `native`",
+                strictfp_span,
+            ).with_span_note(
+                "method was declared `native` here",
+                native_span,
+            ));
+        }
 
         ast::Method {
             vis: vis.unwrap_or(ast::Visibility::Package),
             name: name,
             ret_ty: ret_ty,
             static_: is_static.is_some(),
-            final_: false,
-            strictfp: get_strictfp(&mods).is_some(),
+            final_: is_final.is_some(),
+            strictfp: is_strictfp.is_some(),
             abstract_: is_abstract.is_some(),
+            native: is_native.is_some(),
+            synchronized: is_syncronized.is_some(),
             default: false,
             params: params,
-            block: body,
+            block: body.inner,
         }
     }
 };

@@ -103,8 +103,10 @@ macro_rules! gen_finder {
     }
 }
 
-gen_finder!(get_static, Static);
-gen_finder!(get_final, Final);
-gen_finder!(get_strictfp, Strictfp);
 gen_finder!(get_abstract, Abstract);
 gen_finder!(get_default, Default);
+gen_finder!(get_final, Final);
+gen_finder!(get_native, Native);
+gen_finder!(get_static, Static);
+gen_finder!(get_strictfp, Strictfp);
+gen_finder!(get_synchronized, Synchronized);

@@ -149,6 +149,8 @@ pub struct Method {
     pub final_: bool,
     pub strictfp: bool,
     pub abstract_: bool,
+    pub native: bool,
+    pub synchronized: bool,
     pub default: bool,
     pub params: Vec<FormalParameter>,
     pub block: Option<Block>,
