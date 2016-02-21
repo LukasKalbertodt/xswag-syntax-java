@@ -53,6 +53,8 @@ macro_rules! java_enum { (
     }
 }}
 
+pub type Dims = u16;
+
 // ============================================================================
 // Definition of types that are common in AST nodes
 // ============================================================================
@@ -108,7 +110,7 @@ impl Path {
 #[derive(Debug, Clone)]
 pub struct Type {
     pub name: Path,
-    pub dims: u16,
+    pub dims: Dims,
 }
 
 

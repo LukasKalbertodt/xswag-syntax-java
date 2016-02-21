@@ -357,7 +357,7 @@ ConstantDecl: Vec<ast::Field> = {
 
         var_decls.into_iter().map(|(ident, dims)| {
             let mut ty = ty.clone();
-            ty.dims += dims.unwrap_or(0);
+            ty.dims += dims;
 
             ast::Field {
                 vis: ast::Visibility::Public,
@@ -472,7 +472,7 @@ FieldDecl: Vec<ast::Field> = {
 
         decls.into_iter().map(|(ident, dims)| {
             let mut ty = ty.clone();
-            ty.dims += dims.unwrap_or(0);
+            ty.dims += dims;
             ast::Field {
                 vis: ast::Visibility::Package,
                 static_: false,
@@ -486,9 +486,9 @@ FieldDecl: Vec<ast::Field> = {
 
 // 8.3
 UnannType: ast::Type = {
-    <ty: UnannTypeWithoutDim> <dims: Dims?> => {
+    <ty: UnannTypeWithoutDim> <dims: Dims> => {
         let mut ty = ty;
-        ty.dims = dims.unwrap_or(0);
+        ty.dims = dims;
         ty
     }
 };
@@ -540,7 +540,7 @@ VariableDeclarator = {
 
 // 8.3
 VariableDeclaratorId = {
-    <Ident> <Dims?>
+    <Ident> <Dims>
 };
 
 // 8.3 TODO
@@ -625,7 +625,7 @@ MethodDecl: ast::Method = {
 MethodHeader: (ast::Type, ast::Ident, Vec<ast::FormalParameter>) = {
     <ret: Result> <decl: MethodDeclarator> <throws: Throws?> => {
         let mut ret_ty = ret;
-        ret_ty.dims += decl.2.unwrap_or(0);
+        ret_ty.dims += decl.2;
 
         (ret_ty, decl.0, decl.1.unwrap_or(vec![]))
     }
@@ -633,7 +633,7 @@ MethodHeader: (ast::Type, ast::Ident, Vec<ast::FormalParameter>) = {
 
 // 8.4 TODO
 MethodDeclarator = {
-    <Ident> "(" <FormalParameterList?> ")" <Dims?>
+    <Ident> "(" <FormalParameterList?> ")" <Dims>
 };
 
 // 8.4.1 TODO
@@ -647,7 +647,7 @@ FormalParameterList = {
 FormalParameter: ast::FormalParameter = {
     <final_: "final"?> <ty: UnannType> <id: VariableDeclaratorId> => {
         let mut ty = ty;
-        ty.dims += id.1.unwrap_or(0);
+        ty.dims += id.1;
         ast::FormalParameter {
             ty: ty,
             name: id.0,
@@ -710,9 +710,9 @@ FloatingPointType = {
 };
 
 // 4.3 ANNO
-Dims: u16 = {
-    <dims: Spanned<("[" "]")+>> =>? {
-        if dims.inner.len() > u16::max_value() as usize {
+Dims: ast::Dims = {
+    <dims: Spanned<("[" "]")*>> =>? {
+        if dims.inner.len() > ast::Dims::max_value() as usize {
             Err(ParseError::User {
                 error: Report::simple_error(
                     format!(
@@ -724,7 +724,7 @@ Dims: u16 = {
                 )
             })
         } else {
-            Ok(dims.inner.len() as u16)
+            Ok(dims.inner.len() as ast::Dims)
         }
     } ,
 };
@@ -736,31 +736,25 @@ Dims: u16 = {
 Block: ast::Block = {
     "{" <BlockStatement*> "}" => {
         ast::Block {
-            stmts: <>.into_iter().flat_map(|v| v).collect()
+            stmts: <>
         }
     }
 };
 
 // 14.2 TODO
-BlockStatement: Vec<ast::BlockStatement> = {
+BlockStatement: ast::BlockStatement = {
     LocalVariableDeclStatement,
     // ClassDecl,
     // Statement,
 };
 
 // 14.4 ANNO
-LocalVariableDeclStatement: Vec<ast::BlockStatement> = {
+LocalVariableDeclStatement: ast::BlockStatement = {
     <final_: "final"?> <ty: UnannType> <decls: VariableDeclaratorList> ";" => {
-
-        decls.into_iter().map(|(ident, dims)| {
-            let mut ty = ty.clone();
-            ty.dims += dims.unwrap_or(0);
-
-            ast::BlockStatement::LocalVariableDecl {
-                final_: final_.is_some(),
-                ty: ty,
-                name: ident,
-            }
-        }).collect()
+        ast::BlockStatement::LocalVariableDecl {
+            final_: final_.is_some(),
+            ty: ty,
+            vars: decls,
+        }
     }
 };
