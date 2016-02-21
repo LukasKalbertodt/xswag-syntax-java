@@ -8,6 +8,7 @@ pub use super::{
     Path,
     Import,
     Type,
+    Block,
 };
 
 /// This trait provides generic access to several properties of items
@@ -114,8 +115,7 @@ impl ItemExt for Interface {
 pub struct Class {
     pub name: Ident,
     pub vis: Visibility,
-    pub methods: Vec<Method>,
-    pub fields: Vec<Field>,
+    pub members: Vec<ClassMember>,
 }
 
 impl ItemExt for Class {
@@ -124,6 +124,11 @@ impl ItemExt for Class {
     fn static_(&self) -> Option<bool> { Some(unimplemented!()) }
 }
 
+#[derive(Clone, Debug)]
+pub enum ClassMember {
+    Method(Method),
+    Field(Field),
+}
 
 #[derive(Debug, Clone)]
 pub struct Field {
@@ -146,6 +151,7 @@ pub struct Method {
     pub abstract_: bool,
     pub default: bool,
     pub params: Vec<FormalParameter>,
+    pub block: Option<Block>,
 }
 
 #[derive(Debug, Clone)]

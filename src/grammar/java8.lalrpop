@@ -19,6 +19,7 @@ use super::{
     check_allowed_modifier,
     get_visibility,
     get_static,
+    get_final,
     get_strictfp,
     get_abstract,
     get_default,
@@ -395,6 +396,7 @@ InterfaceMethodDecl: ast::Method = {
             abstract_: is_abstract.is_some(),
             default: is_default.is_some(),
             params: params,
+            block: body,
         }
     }
 };
@@ -403,30 +405,30 @@ InterfaceMethodDecl: ast::Method = {
 // ---------------------------------------------------------------------------
 
 
-// 8.1 ClassDeclaration TODO
+// 8.1 TODO
 ClassDecl: ast::TypeDef = {
     <NormalClassDecl> => ast::TypeDef::NormalClass(<>),
     // EnumDecl,
 };
 
-// 8.1 NormalClassDeclaration TODO
+// 8.1 TODO GENE
 NormalClassDecl: ast::Class = {
     <modifier: Spanned<Modifier>*>
-    "class" <class_name: Ident>
-    <body: ClassBody> =>? {
+        "class" <class_name: Ident>
+        <body: ClassBody> =>?
+    {
         // check modifier
         Ok(ast::Class {
             name: class_name,
             vis: ast::Visibility::Public,
-            methods: vec![],
-            fields: body,
+            members: body,
         })
     }
 };
 
 
 // 8.1.6
-ClassBody: Vec<ast::Field> = {
+ClassBody: Vec<ast::ClassMember> = {
     "{" <ClassBodyDecl*> "}" => {
         <>.into_iter().flat_map(|v| v.into_iter()).collect()
     }
@@ -435,114 +437,47 @@ ClassBody: Vec<ast::Field> = {
 // 8.1.6 TODO
 ClassBodyDecl = {
     ClassMemberDecl,
-    // TODO: ...
+    // InstanceInitializer
+    // StaticInitializer
+    // ConstructorDeclaration
 };
 
 // 8.1.6 TODO
-ClassMemberDecl = {
-    FieldDecl,
-    // MethodDecl,
+ClassMemberDecl: Vec<ast::ClassMember> = {
+    FieldDecl => {
+        <>.into_iter().map(|f| ast::ClassMember::Field(f)).collect()
+    },
+    MethodDecl => {
+        vec![ast::ClassMember::Method(<>)]
+    },
     // ClassDecl,
     // InterfaceDecl,
 };
 
 // 8.3 TODO
 FieldDecl: Vec<ast::Field> = {
-    <mods: Spanned<FieldModifier>*>
-    <ty: UnannType> <decls: VariableDeclaratorList> ";"
-        =>? {
-        // unwrap keywords from token
-        let mods: Vec<_> = mods.iter().map(|&ast::Spanned { ref inner, span }|
-            (
-                if let &Token::KeyW(m) = inner { m } else { unreachable!() },
-                span,
-            )
-        ).collect();
+    <mods: Spanned<Modifier>*>
+        <ty: UnannType> <decls: VariableDeclaratorList> ";" =>
+    {
+        // TODO: modifier checks
+        // check_mods!(errors, "class-field", mods, [
+        //         Public, Protected, Private, Abstract, Static, Final,
+        //         Synchronized, Native, Strictfp
+        //     ]
+        // );
 
-        // check Modifier
-        let mut vis = ast::Visibility::Package;
-        let mut first_vis = None;
-        let mut static_ = false;
-        let mut final_ = false;
-
-        for &(m, span) in &mods {
-            match m {
-                Keyword::Public | Keyword::Private | Keyword::Protected => {
-                    // check if there was a visibility modifier before this one
-                    if let Some(prev_span) = first_vis {
-                        let e = Report::simple_error(
-                            "duplicate visibility modifier",
-                            span
-                        ).with_span_note(
-                            "the first visibility modifier is already here",
-                            prev_span
-                        );
-                        errors.push(e);
-                    } else {
-                        first_vis = Some(span);
-                        vis = match m {
-                            Keyword::Public => ast::Visibility::Public,
-                            Keyword::Private => ast::Visibility::Private,
-                            Keyword::Protected => ast::Visibility::Protected,
-                            _ => unreachable!(),
-                        };
-                    }
-                },
-                Keyword::Static => {
-                    if static_ {
-                        let e = Report::simple_error(
-                            "duplicate `static` modifier",
-                            span
-                        ).with_span_note(
-                            "the modifier is already set here",
-                            mods.iter()
-                                .find(|&&(m, span)| m == Keyword::Static)
-                                .map(|&(_, span)| span).unwrap()
-                        );
-                        errors.push(e);
-                    } else {
-                        static_ = true;
-                    }
-                },
-                Keyword::Final => {
-                    if final_ {
-                        let e = Report::simple_error(
-                            "duplicate `final` modifier",
-                            span
-                        ).with_span_note(
-                            "the modifier is already set here",
-                            mods.iter()
-                                .find(|&&(m, span)| m == Keyword::Final)
-                                .map(|&(_, span)| span).unwrap()
-                        );
-                        errors.push(e);
-                    } else {
-                        final_ = true;
-                    }
-                },
-                _ => {},
+        decls.into_iter().map(|(ident, dims)| {
+            let mut ty = ty.clone();
+            ty.dims += dims.unwrap_or(0);
+            ast::Field {
+                vis: ast::Visibility::Package,
+                static_: false,
+                final_: false,
+                ty: ty,
+                name: ident,
             }
-        }
-
-        decls.into_iter().map(|decl| {
-            let f = ast::Field {
-                vis: vis,
-                static_: static_,
-                final_: final_,
-                ty: ty.clone(),
-                name: decl.0,
-            };
-            Ok(f)
         }).collect()
     }
-};
-
-FieldModifier = {
-    "public",
-    "protected",
-    "private",
-    "static",
-    "final",
 };
 
 // 8.3
@@ -607,6 +542,46 @@ VariableDeclaratorId = {
 // 8.3 TODO
 VariableInitializer = "~";
 
+// 8.4 ANNO TODO
+MethodDecl: ast::Method = {
+    <mods: Spanned<Modifier>*> <header: MethodHeader> <body: MethodBody> => {
+        check_mods!(errors, "class-method", mods, [
+                Public, Protected, Private, Abstract, Static, Final,
+                Synchronized, Native, Strictfp
+            ]
+        );
+
+        let (ret_ty, name, params) = header;
+
+        let is_static = get_static(&mods);
+        let is_final = get_final(&mods);
+        let is_abstract = get_abstract(&mods);
+        let vis = get_visibility(&mods, errors);
+
+        // TODO: modifier checks
+
+        // TOOD:
+        // It is a compile-time error if a method declaration that contains the
+        //     keyword abstract also contains any one of the keywords private,
+        //     static, final, native, strictfp, or synchronized.
+        // It is a compile-time error if a method declaration that contains the
+        //     keyword native also contains strictfp.
+
+        ast::Method {
+            vis: vis.unwrap_or(ast::Visibility::Package),
+            name: name,
+            ret_ty: ret_ty,
+            static_: is_static.is_some(),
+            final_: false,
+            strictfp: get_strictfp(&mods).is_some(),
+            abstract_: is_abstract.is_some(),
+            default: false,
+            params: params,
+            block: body,
+        }
+    }
+};
+
 // 8.4 GENE ANNO
 MethodHeader: (ast::Type, ast::Ident, Vec<ast::FormalParameter>) = {
     <ret: Result> <decl: MethodDeclarator> <throws: Throws?> => {
@@ -659,10 +634,13 @@ Result = {
 Throws = "throws";
 
 // 8.4.7 TODO
-MethodBody = ";";
+MethodBody: Option<ast::Block> = {
+    ";" => None,
+    Block => Some(<>),
+};
 
 
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // ~~~ Section 4 [ANNO, -] ~~~
 
 // 4.2 ANNO
@@ -710,4 +688,40 @@ Dims: u16 = {
             Ok(dims.inner.len() as u16)
         }
     } ,
+};
+
+// ----------------------------------------------------------------------------
+// ~~~ Section 14 [TODO] ~~~
+
+// 14.2 TODO
+Block: ast::Block = {
+    "{" <BlockStatement*> "}" => {
+        ast::Block {
+            stmts: <>.into_iter().flat_map(|v| v).collect()
+        }
+    }
+};
+
+// 14.2 TODO
+BlockStatement: Vec<ast::BlockStatement> = {
+    LocalVariableDeclStatement,
+    // ClassDecl,
+    // Statement,
+};
+
+// 14.4 ANNO
+LocalVariableDeclStatement: Vec<ast::BlockStatement> = {
+    <final_: "final"?> <ty: UnannType> <decls: VariableDeclaratorList> ";" => {
+
+        decls.into_iter().map(|(ident, dims)| {
+            let mut ty = ty.clone();
+            ty.dims += dims.unwrap_or(0);
+
+            ast::BlockStatement::LocalVariableDecl {
+                final_: final_.is_some(),
+                ty: ty,
+                name: ident,
+            }
+        }).collect()
+    }
 };

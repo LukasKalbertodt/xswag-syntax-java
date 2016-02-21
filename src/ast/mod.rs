@@ -4,16 +4,23 @@
 // TODO: make this private again, once #18241 is fixed
 // https://github.com/rust-lang/rust/issues/18241
 pub mod item;
+pub mod block;
 
 pub use self::item::{
     ItemExt,
     TypeDef,
     Interface,
     Class,
+    ClassMember,
     Field,
     Method,
     TypeItem,
     FormalParameter,
+};
+
+pub use self::block::{
+    Block,
+    BlockStatement,
 };
 
 use std::fmt::{Display, Formatter, Error};
