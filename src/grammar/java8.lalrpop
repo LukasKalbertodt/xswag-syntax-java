@@ -857,6 +857,53 @@ PrimaryNoNewArray: ast::ExprType = {
     "(" <Expression> ")" => <>.expr,
 };
 
+// 15.14
+PostfixExpression: ast::ExprType = {
+    Primary,
+    ExpressionName,
+    <Spanned<PostfixExpression>> "++" => ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::PostIncr,
+        expr: <>.into(),
+    },
+    <Spanned<PostfixExpression>> "--" => ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::PostDecr,
+        expr: <>.into(),
+    },
+};
+
+// 15.15 TODO
+UnaryExpression: ast::ExprType = {
+    "++" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::PreIncr,
+        expr: <>.into(),
+    },
+    "--" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::PreDecr,
+        expr: <>.into(),
+    },
+    "+" <Spanned<UnaryExpression>> =>ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::Plus,
+        expr: <>.into(),
+    },
+    "-" <Spanned<UnaryExpression>> =>ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::Neg,
+        expr: <>.into(),
+    },
+    UnaryExpressionNotPlusMinus => <>,
+};
+UnaryExpressionNotPlusMinus: ast::ExprType = {
+    Primary => <>,
+    "~" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::BitwiseNot,
+        expr: <>.into(),
+    },
+    "!" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::Not,
+        expr: <>.into(),
+    },
+    // CastExpression
+};
+
 // 15.17
 MultiplicativeExpression = {
     Primary,
@@ -931,7 +978,7 @@ AssignmentExpression = {
     Assignment,
 };
 Assignment: ast::ExprType = {
-    <lhs: LeftHandSide> <op: AssignmentOperator> <rhs: Expression> => {
+    <lhs: Spanned<LeftHandSide>> <op: AssignmentOperator> <rhs: Expression> => {
         ast::ExprType::BinOp {
             // we know that we only allow assignment operators
             op: ast::BinOpType::from_token(&op).unwrap(),
@@ -948,12 +995,6 @@ AssignmentOperator = {
 };
 
 // 6.5
-ExpressionName: ast::Expr = {
-    Path => {
-        ast::Expr {
-            // parsed `Path`s always contain at least one segment (unwrap ok)
-            span: <>.span().unwrap(),
-            expr: ast::ExprType::Name(<>),
-        }
-    }
+ExpressionName: ast::ExprType = {
+    Path => ast::ExprType::Name(<>),
 };

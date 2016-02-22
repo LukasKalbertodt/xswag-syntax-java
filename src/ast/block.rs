@@ -67,6 +67,10 @@ pub enum ExprType {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
+    UnaryOp {
+        op: UnaryOpType,
+        expr: Box<Expr>,
+    },
     Literal(lex::Lit),
     Name(Path),
 }
@@ -95,6 +99,18 @@ pub enum BinOpType {
     BitwiseOr,
     BitwiseAnd,
     BitwiseXor,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum UnaryOpType {
+    Plus,
+    Neg,
+    PreIncr,
+    PreDecr,
+    PostIncr,
+    PostDecr,
+    Not,
+    BitwiseNot,
 }
 
 impl BinOpType {

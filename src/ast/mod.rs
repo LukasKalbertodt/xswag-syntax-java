@@ -26,6 +26,7 @@ pub use self::block::{
     Expr,
     ExprType,
     BinOpType,
+    UnaryOpType,
 };
 
 use std::fmt::{Display, Formatter, Error};
