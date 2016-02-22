@@ -21,6 +21,8 @@ pub use self::item::{
 pub use self::block::{
     Block,
     BlockStatement,
+    Statement,
+    StatementType,
 };
 
 use std::fmt::{Display, Formatter, Error};

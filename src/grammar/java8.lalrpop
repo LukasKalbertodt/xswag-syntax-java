@@ -743,9 +743,9 @@ Block: ast::Block = {
 
 // 14.2 TODO
 BlockStatement: ast::BlockStatement = {
-    LocalVariableDeclStatement,
+    LocalVariableDeclStatement => <>,
     // ClassDecl,
-    // Statement,
+    Statement => ast::BlockStatement::Statement(<>),
 };
 
 // 14.4 ANNO
@@ -756,5 +756,52 @@ LocalVariableDeclStatement: ast::BlockStatement = {
             ty: ty,
             vars: decls,
         }
+    }
+};
+
+// 14.5
+Statement = {
+    StatementWithoutTrailingSubstatement,
+    LabeledStatement,
+};
+StatementNoShortIf = {
+    StatementWithoutTrailingSubstatement,
+    LabeledStatementNoShortIf,
+};
+StatementWithoutTrailingSubstatement: ast::Statement = {
+    Spanned<Block> => {
+        ast::Statement {
+            label: None,
+            stmt: ast::StatementType::Block(<>.inner),
+            span: <>.span,
+        }
+    },
+    EmptyStatement => <>,
+};
+
+// 14.6
+EmptyStatement: ast::Statement = {
+    Spanned<";"> => {
+        ast::Statement {
+            label: None,
+            stmt: ast::StatementType::Empty,
+            span: <>.span,
+        }
+    }
+};
+
+// 14.7
+LabeledStatement: ast::Statement = {
+    <label: Ident> ":" <stmt: Statement> => {
+        let mut stmt = stmt;
+        stmt.label = Some(label);
+        stmt
+    }
+};
+LabeledStatementNoShortIf: ast::Statement = {
+    <label: Ident> ":" <stmt: StatementNoShortIf> => {
+        let mut stmt = stmt;
+        stmt.label = Some(label);
+        stmt
     }
 };

@@ -9,6 +9,7 @@ pub use super::{
     Type,
     Dims,
 };
+use base::code::Span;
 
 
 #[derive(Clone, Debug)]
@@ -24,5 +25,18 @@ pub enum BlockStatement {
         vars: Vec<(Ident, Dims)>,
     },
     // ClassDecl,
-    // Statement,
+    Statement(Statement),
+}
+
+#[derive(Clone, Debug)]
+pub struct Statement {
+    pub label: Option<Ident>,
+    pub stmt: StatementType,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub enum StatementType {
+    Empty,
+    Block(Block),
 }
