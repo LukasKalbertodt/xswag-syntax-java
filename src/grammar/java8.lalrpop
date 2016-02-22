@@ -173,15 +173,8 @@ Spanned<T>: ast::Spanned<T> = {
 };
 
 #[inline]
-BinOp<L, O, R>: BinOpExpr = {
-    <lhs: Spanned<L>> O <rhs: Spanned<R>> => {
-        BinOpExpr { lhs: lhs.into(), rhs: rhs.into() }
-    },
-};
-
-BinOpLeftAssoc<O, N>: ast::ExprType = {
-    N => <>,
-    <lhs: Spanned<BinOpLeftAssoc<O, N>>> <op: O> <rhs: Spanned<N>> => {
+BinOp<L, O, R>: ast::ExprType = {
+    <lhs: Spanned<L>> <op: O> <rhs: Spanned<R>> => {
         ast::ExprType::BinOp {
             // this macro is only used in the parser and we assume that the
             // parser only specifies correct tokens (unwrap ok)
@@ -190,6 +183,11 @@ BinOpLeftAssoc<O, N>: ast::ExprType = {
             rhs: rhs.into(),
         }
     },
+};
+
+BinOpLeftAssoc<O, N>: ast::ExprType = {
+    N,
+    BinOp<BinOpLeftAssoc<O, N>, O, N>,
 };
 
 // ===========================================================================
@@ -859,8 +857,48 @@ PrimaryNoNewArray: ast::ExprType = {
     "(" <Expression> ")" => <>.expr,
 };
 
+// 15.17
+MultiplicativeExpression = {
+    Primary,
+    BinOp<MultiplicativeExpression, "*", Primary>,
+    BinOp<MultiplicativeExpression, "/", Primary>,
+    BinOp<MultiplicativeExpression, "%", Primary>,
+};
+
+// 15.18
+AdditiveExpression = {
+    MultiplicativeExpression,
+    BinOp<AdditiveExpression, "+", MultiplicativeExpression>,
+    BinOp<AdditiveExpression, "-", MultiplicativeExpression>,
+};
+
+// 15.19
+ShiftExpression = {
+    AdditiveExpression,
+    BinOp<ShiftExpression, "<<", AdditiveExpression>,
+    BinOp<ShiftExpression, ">>", AdditiveExpression>,
+    BinOp<ShiftExpression, ">>>", AdditiveExpression>,
+};
+
+// 15.20 TODO
+RelationalExpression = {
+    ShiftExpression,
+    BinOp<RelationalExpression, "<", ShiftExpression>,
+    BinOp<RelationalExpression, ">", ShiftExpression>,
+    BinOp<RelationalExpression, "<=", ShiftExpression>,
+    BinOp<RelationalExpression, ">=", ShiftExpression>,
+    // BinOp<RelationalExpression, "instanceof", ReferenceType>,
+};
+
+// 15.21
+EqualityExpression = {
+    RelationalExpression,
+    BinOp<EqualityExpression, "==", RelationalExpression>,
+    BinOp<EqualityExpression, "!=", RelationalExpression>,
+};
+
 // 15.22
-AndExpression = BinOpLeftAssoc<"&", Primary>;
+AndExpression = BinOpLeftAssoc<"&", EqualityExpression>;
 ExclusiveOrExpression = BinOpLeftAssoc<"^", AndExpression>;
 InclusiveOrExpression = BinOpLeftAssoc<"|", ExclusiveOrExpression>;
 
@@ -894,7 +932,6 @@ AssignmentExpression = {
 };
 Assignment: ast::ExprType = {
     <lhs: LeftHandSide> <op: AssignmentOperator> <rhs: Expression> => {
-    // <lhs: LeftHandSide> <op: AssignmentOperator> => {
         ast::ExprType::BinOp {
             // we know that we only allow assignment operators
             op: ast::BinOpType::from_token(&op).unwrap(),
