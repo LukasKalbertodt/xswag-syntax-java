@@ -61,14 +61,14 @@ pub enum ExprType {
         else_branch: Box<Expr>,
     },
     BinOp {
-        op: BinOp,
+        op: BinOpType,
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum BinOp {
+pub enum BinOpType {
     // Assignment [ =  *=  /=  %=  +=  -=  <<=  >>=  >>>=  &=  ^=  |= ]
     Assign,
     MulAssign,
@@ -83,7 +83,12 @@ pub enum BinOp {
     XorAssign,
     OrAssign,
 
-    // LogicalOperators
+    // Logical operators
     LogicalOr,
     LogicalAnd,
+
+    // Bitwise operators
+    BitwiseOr,
+    BitwiseAnd,
+    BitwiseXor,
 }

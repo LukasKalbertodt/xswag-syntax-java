@@ -25,7 +25,7 @@ pub use self::block::{
     StatementType,
     Expr,
     ExprType,
-    BinOp,
+    BinOpType,
 };
 
 use std::fmt::{Display, Formatter, Error};

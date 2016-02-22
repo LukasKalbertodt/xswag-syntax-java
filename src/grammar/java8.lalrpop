@@ -25,6 +25,7 @@ use super::{
     get_strictfp,
     get_synchronized,
     get_visibility,
+    BinOpExpr,
 };
 
 grammar(errors: &mut Vec<Report>);
@@ -165,6 +166,13 @@ Comma<T>: Vec<T> = {
 #[inline]
 Spanned<T>: ast::Spanned<T> = {
     <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
+};
+
+#[inline]
+BinOp<L, O, R>: BinOpExpr = {
+    <lhs: Spanned<L>> O <rhs: Spanned<R>> => {
+        BinOpExpr { lhs: lhs.into(), rhs: rhs.into() }
+    },
 };
 
 // ===========================================================================
@@ -811,12 +819,47 @@ Expression: ast::Expr = {
     Spanned<AssignmentExpression> => <>.into(),
 };
 
-// 15.26
-AssignmentExpression: ast::ExprType = {
-    ConditionalExpression
+// 15.22
+// AndExpression: ast::ExprType = {
+//     EqualityExpression
+//     AndExpression "&" EqualityExpression
+// };
+ExclusiveOrExpression: ast::ExprType = {
+    // AndExpression
+    // ExclusiveOrExpression "^" AndExpression
+    <Spanned<ExclusiveOrExpression>> "^" => {
+        ast::ExprType::BinOp {
+            op: ast::BinOpType::LogicalAnd,
+            lhs: <>.clone().into(),
+            rhs: <>.into(),
+        }
+    }
+};
+InclusiveOrExpression: ast::ExprType = {
+    ExclusiveOrExpression => <>,
+    BinOp<InclusiveOrExpression, "|", ExclusiveOrExpression> => {
+        <>.as_op(ast::BinOpType::BitwiseOr)
+    }
 };
 
-// 15.25
+
+// 15.23
+ConditionalAndExpression: ast::ExprType = {
+    InclusiveOrExpression,
+    BinOp<ConditionalAndExpression, "&&", InclusiveOrExpression> => {
+        <>.as_op(ast::BinOpType::LogicalAnd)
+    }
+};
+
+// 15.24
+ConditionalOrExpression: ast::ExprType = {
+    ConditionalAndExpression => <>,
+    BinOp<ConditionalOrExpression, "||", ConditionalAndExpression> => {
+        <>.as_op(ast::BinOpType::LogicalOr)
+    }
+};
+
+// 15.25 TODO
 ConditionalExpression: ast::ExprType = {
     ConditionalOrExpression => <>,
     <cond: Spanned<ConditionalOrExpression>> "?"
@@ -832,27 +875,8 @@ ConditionalExpression: ast::ExprType = {
     // ConditionalOrExpression "?" Expression ":" LambdaExpression,
 };
 
-// 15.24
-ConditionalOrExpression: ast::ExprType = {
-    ConditionalAndExpression => <>,
-    <lhs: Spanned<ConditionalOrExpression>> "||" <rhs: Spanned<ConditionalAndExpression>> => {
-        ast::ExprType::BinOp {
-            op: ast::BinOp::LogicalOr,
-            lhs: lhs.into(),
-            rhs: rhs.into(),
-        }
-    },
-};
 
-// 15.23
-ConditionalAndExpression: ast::ExprType = {
-    // InclusiveOrExpression,
-    // <l: @L> <lhs: ConditionalAndExpression> "&&" <rhs: InclusiveOrExpression> <r: @R> => {
-    <lhs: Spanned<ConditionalAndExpression>> "&&" <rhs: "@"> => {
-        ast::ExprType::BinOp {
-            op: ast::BinOp::LogicalAnd,
-            lhs: lhs.clone().into(),
-            rhs: lhs.into(),
-        }
-    }
+// 15.26 TODO
+AssignmentExpression: ast::ExprType = {
+    ConditionalExpression
 };

@@ -110,3 +110,19 @@ gen_finder!(get_native, Native);
 gen_finder!(get_static, Static);
 gen_finder!(get_strictfp, Strictfp);
 gen_finder!(get_synchronized, Synchronized);
+
+// TODO: investigate why this can't be private
+pub struct BinOpExpr {
+    lhs: Box<ast::Expr>,
+    rhs: Box<ast::Expr>,
+}
+
+impl BinOpExpr {
+    pub fn as_op(self, ty: ast::BinOpType) -> ast::ExprType {
+        ast::ExprType::BinOp {
+            op: ty,
+            lhs: self.lhs,
+            rhs: self.rhs,
+        }
+    }
+}
