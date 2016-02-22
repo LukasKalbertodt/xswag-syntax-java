@@ -766,7 +766,7 @@ Block: ast::Block = {
 
 // 14.2 TODO
 BlockStatement: ast::BlockStatement = {
-    LocalVariableDeclStatement => <>,
+    LocalVariableDeclStatement,
     // ClassDecl,
     Statement => ast::BlockStatement::Statement(<>),
 };
@@ -799,8 +799,8 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
             span: <>.span,
         }
     },
-    EmptyStatement => <>,
-    ExpressionStatement => <>,
+    EmptyStatement,
+    ExpressionStatement,
 };
 
 // 14.6
@@ -889,10 +889,10 @@ UnaryExpression: ast::ExprType = {
         op: ast::UnaryOpType::Neg,
         expr: <>.into(),
     },
-    UnaryExpressionNotPlusMinus => <>,
+    UnaryExpressionNotPlusMinus,
 };
 UnaryExpressionNotPlusMinus: ast::ExprType = {
-    Primary => <>,
+    Primary,
     "~" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
         op: ast::UnaryOpType::BitwiseNot,
         expr: <>.into(),
@@ -957,7 +957,7 @@ ConditionalOrExpression = BinOpLeftAssoc<"||", ConditionalAndExpression>;
 
 // 15.25 TODO
 ConditionalExpression: ast::ExprType = {
-    ConditionalOrExpression => <>,
+    ConditionalOrExpression,
     <cond: Spanned<ConditionalOrExpression>> "?"
         <if_branch: Expression> ":"
         <else_branch: Spanned<ConditionalExpression>> =>
