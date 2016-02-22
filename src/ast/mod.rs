@@ -78,6 +78,12 @@ impl Into<Expr> for Spanned<ExprType> {
     }
 }
 
+impl Into<Expr> for Spanned<Expr> {
+    fn into(self) -> Expr {
+        self.inner
+    }
+}
+
 impl Into<Box<Expr>> for Spanned<ExprType> {
     fn into(self) -> Box<Expr> {
         Box::new(Expr {

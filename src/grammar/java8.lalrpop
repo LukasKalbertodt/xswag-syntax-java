@@ -11,7 +11,7 @@
 
 use ast;
 use ast::ItemExt;
-use lex::{Token, Keyword};
+use lex::{self, Token, Keyword};
 use base::code::{BytePos, Span};
 use base::diag::Report;
 use lalrpop_util::ParseError;
@@ -37,7 +37,7 @@ extern {
     enum Token {
         // Variants of the Java-*Token*
         Word => Token::Ident(<String>),
-        // Literal(Lit),
+        Literal => Token::Literal(<lex::Lit>),
 
         // Keywords
         "abstract" => Token::KeyW(Keyword::Abstract),
@@ -163,9 +163,13 @@ Comma<T>: Vec<T> = {
     }
 };
 
+// // #[inline]
+// Spanned<T>: ast::Spanned<T> = {
+//     <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
+// };
 #[inline]
 Spanned<T>: ast::Spanned<T> = {
-    <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
+    <t:T> => ast::Spanned { inner: t, span: Span::dummy() },
 };
 
 #[inline]
@@ -798,6 +802,7 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
         }
     },
     EmptyStatement => <>,
+    ExpressionStatement => <>,
 };
 
 // 14.6
@@ -827,27 +832,36 @@ LabeledStatementNoShortIf: ast::Statement = {
     }
 };
 
+// 14.8
+#[inline]
+ExpressionStatement = <StatementExpression> ";";
+StatementExpression: ast::Statement = {
+    Spanned<Assignment> => {
+        ast::Statement {
+            span: <>.span,
+            label: None,
+            stmt: ast::StatementType::Expr(<>.into()),
+        }
+    }
+};
+
 // 15.2
 Expression: ast::Expr = {
     Spanned<AssignmentExpression> => <>.into(),
 };
 
-// 15.22
-// AndExpression: ast::ExprType = {
-//     EqualityExpression
-//     AndExpression "&" EqualityExpression
-// };
-ExclusiveOrExpression: ast::ExprType = {
-    // AndExpression
-    // ExclusiveOrExpression "^" AndExpression
-    <Spanned<ExclusiveOrExpression>> "^" => {
-        ast::ExprType::BinOp {
-            op: ast::BinOpType::LogicalAnd,
-            lhs: <>.clone().into(),
-            rhs: <>.into(),
-        }
-    }
+// 15.8
+Primary = {
+    PrimaryNoNewArray,
 };
+PrimaryNoNewArray: ast::ExprType = {
+    Literal => ast::ExprType::Literal(<>),
+    "(" <Expression> ")" => <>.expr,
+};
+
+// 15.22
+AndExpression = BinOpLeftAssoc<"&", Primary>;
+ExclusiveOrExpression = BinOpLeftAssoc<"^", AndExpression>;
 InclusiveOrExpression = BinOpLeftAssoc<"|", ExclusiveOrExpression>;
 
 // 15.23
@@ -874,6 +888,35 @@ ConditionalExpression: ast::ExprType = {
 
 
 // 15.26 TODO
-AssignmentExpression: ast::ExprType = {
-    ConditionalExpression
+AssignmentExpression = {
+    ConditionalExpression,
+    Assignment,
+};
+Assignment: ast::ExprType = {
+    <lhs: LeftHandSide> <op: AssignmentOperator> <rhs: Expression> => {
+    // <lhs: LeftHandSide> <op: AssignmentOperator> => {
+        ast::ExprType::BinOp {
+            // we know that we only allow assignment operators
+            op: ast::BinOpType::from_token(&op).unwrap(),
+            lhs: lhs.into(),
+            rhs: rhs.into(),
+        }
+    }
+};
+LeftHandSide = {
+    ExpressionName,
+};
+AssignmentOperator = {
+    "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", ">>>=", "&=", "^=", "|="
+};
+
+// 6.5
+ExpressionName: ast::Expr = {
+    Path => {
+        ast::Expr {
+            // parsed `Path`s always contain at least one segment (unwrap ok)
+            span: <>.span().unwrap(),
+            expr: ast::ExprType::Name(<>),
+        }
+    }
 };

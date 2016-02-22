@@ -40,6 +40,7 @@ pub struct Statement {
 pub enum StatementType {
     Empty,
     Block(Block),
+    Expr(Expr),
 }
 
 #[derive(Clone, Debug)]
@@ -66,6 +67,8 @@ pub enum ExprType {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
+    Literal(lex::Lit),
+    Name(Path),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -100,7 +103,7 @@ impl BinOpType {
 
         match *tok {
             // =   >   <   !   ~   ?   :   ->
-            Eq => None,
+            Eq => Some(BinOpType::Assign),
             Gt => None,
             Lt => None,
             Bang => None,
@@ -133,17 +136,17 @@ impl BinOpType {
             ShrUn => None,
 
             // +=  -=  *=  /=  &=  |=  ^=  %=  <<=  >>=  >>>=
-            PlusEq => None,
-            MinusEq => None,
-            StarEq => None,
-            SlashEq => None,
-            AndEq => None,
-            OrEq => None,
-            CaretEq => None,
-            PercentEq => None,
-            ShlEq => None,
-            ShrEq => None,
-            ShrUnEq => None,
+            PlusEq => Some(BinOpType::AddAssign),
+            MinusEq => Some(BinOpType::SubAssign),
+            StarEq => Some(BinOpType::MulAssign),
+            SlashEq => Some(BinOpType::DivAssign),
+            AndEq => Some(BinOpType::AndAssign),
+            OrEq => Some(BinOpType::OrAssign),
+            CaretEq => Some(BinOpType::XorAssign),
+            PercentEq => Some(BinOpType::ModAssign),
+            ShlEq => Some(BinOpType::ShlAssign),
+            ShrEq => Some(BinOpType::ShrAssign),
+            ShrUnEq => Some(BinOpType::ShrUnAssign),
 
             _ => None,
         }
