@@ -40,3 +40,50 @@ pub enum StatementType {
     Empty,
     Block(Block),
 }
+
+#[derive(Clone, Debug)]
+pub struct Expr {
+    pub expr: ExprType,
+    pub span: Span,
+}
+
+impl Expr {
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ExprType {
+    Conditional {
+        cond: Box<Expr>,
+        if_branch: Box<Expr>,
+        else_branch: Box<Expr>,
+    },
+    BinOp {
+        op: BinOp,
+        lhs: Box<Expr>,
+        rhs: Box<Expr>,
+    },
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum BinOp {
+    // Assignment [ =  *=  /=  %=  +=  -=  <<=  >>=  >>>=  &=  ^=  |= ]
+    Assign,
+    MulAssign,
+    DivAssign,
+    ModAssign,
+    AddAssign,
+    SubAssign,
+    ShlAssign,
+    ShrAssign,
+    ShrUnAssign,
+    AndAssign,
+    XorAssign,
+    OrAssign,
+
+    // LogicalOperators
+    LogicalOr,
+    LogicalAnd,
+}

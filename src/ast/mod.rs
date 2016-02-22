@@ -23,6 +23,9 @@ pub use self::block::{
     BlockStatement,
     Statement,
     StatementType,
+    Expr,
+    ExprType,
+    BinOp,
 };
 
 use std::fmt::{Display, Formatter, Error};
@@ -64,6 +67,24 @@ pub type Dims = u16;
 pub struct Spanned<T: Clone + fmt::Debug> {
     pub inner: T,
     pub span: Span,
+}
+
+impl Into<Expr> for Spanned<ExprType> {
+    fn into(self) -> Expr {
+        Expr {
+            expr: self.inner,
+            span: self.span,
+        }
+    }
+}
+
+impl Into<Box<Expr>> for Spanned<ExprType> {
+    fn into(self) -> Box<Expr> {
+        Box::new(Expr {
+            expr: self.inner,
+            span: self.span,
+        })
+    }
 }
 
 impl<T> marker::Copy for Spanned<T> where T: Copy + fmt::Debug {}

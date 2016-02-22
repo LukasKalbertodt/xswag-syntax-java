@@ -805,3 +805,54 @@ LabeledStatementNoShortIf: ast::Statement = {
         stmt
     }
 };
+
+// 15.2
+Expression: ast::Expr = {
+    Spanned<AssignmentExpression> => <>.into(),
+};
+
+// 15.26
+AssignmentExpression: ast::ExprType = {
+    ConditionalExpression
+};
+
+// 15.25
+ConditionalExpression: ast::ExprType = {
+    ConditionalOrExpression => <>,
+    <cond: Spanned<ConditionalOrExpression>> "?"
+        <if_branch: Expression> ":"
+        <else_branch: Spanned<ConditionalExpression>> =>
+    {
+        ast::ExprType::Conditional {
+            cond: cond.into(),
+            if_branch: if_branch.into(),
+            else_branch: else_branch.into(),
+        }
+    },
+    // ConditionalOrExpression "?" Expression ":" LambdaExpression,
+};
+
+// 15.24
+ConditionalOrExpression: ast::ExprType = {
+    ConditionalAndExpression => <>,
+    <lhs: Spanned<ConditionalOrExpression>> "||" <rhs: Spanned<ConditionalAndExpression>> => {
+        ast::ExprType::BinOp {
+            op: ast::BinOp::LogicalOr,
+            lhs: lhs.into(),
+            rhs: rhs.into(),
+        }
+    },
+};
+
+// 15.23
+ConditionalAndExpression: ast::ExprType = {
+    // InclusiveOrExpression,
+    // <l: @L> <lhs: ConditionalAndExpression> "&&" <rhs: InclusiveOrExpression> <r: @R> => {
+    <lhs: Spanned<ConditionalAndExpression>> "&&" <rhs: "@"> => {
+        ast::ExprType::BinOp {
+            op: ast::BinOp::LogicalAnd,
+            lhs: lhs.clone().into(),
+            rhs: lhs.into(),
+        }
+    }
+};
