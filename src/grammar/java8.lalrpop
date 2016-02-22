@@ -28,7 +28,7 @@ use super::{
     BinOpExpr,
 };
 
-grammar(errors: &mut Vec<Report>);
+grammar(errors: &mut Vec<Report>)["LALR"];
 
 extern {
     type Location = BytePos;
@@ -163,12 +163,9 @@ Comma<T>: Vec<T> = {
     }
 };
 
-// // #[inline]
-// Spanned<T>: ast::Spanned<T> = {
-//     <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
-// };
 #[inline]
 Spanned<T>: ast::Spanned<T> = {
+    // <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
     <t:T> => ast::Spanned { inner: t, span: Span::dummy() },
 };
 
@@ -205,10 +202,12 @@ ModifierImpl = {
     "native",
     "strictfp",
 };
+#[inline]
 Modifier: Keyword = {
     ModifierImpl => if let Token::KeyW(kw) = <> { kw } else { unreachable!() }
 };
 
+#[inline]
 Ident: ast::Ident = {
     <w: Spanned<Word>> => ast::Ident {
         name: w.inner,
@@ -361,7 +360,6 @@ NormalInterfaceDecl: ast::Interface = {
 InterfaceBody = "{" <InterfaceMemberDecl*> "}";
 
 // 9.1.4 TODO
-#[inline]
 InterfaceMemberDecl: Vec<ast::TypeItem> = {
     ConstantDecl => {
         <>.into_iter().map(|f| ast::TypeItem::Constant(f)).collect()
@@ -439,6 +437,7 @@ ClassDecl: ast::TypeDef = {
 };
 
 // 8.1 TODO GENE
+#[inline]
 NormalClassDecl: ast::Class = {
     <modifier: Spanned<Modifier>*>
         "class" <class_name: Ident>
@@ -718,6 +717,7 @@ NumericType = {
 };
 
 // 4.2
+#[inline]
 IntegralType = {
     "byte",
     "short",
@@ -727,6 +727,7 @@ IntegralType = {
 };
 
 // 4.2
+#[inline]
 FloatingPointType = {
     "float",
     "double",
