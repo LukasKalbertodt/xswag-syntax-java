@@ -10,6 +10,7 @@ pub use super::{
     Dims,
 };
 use base::code::Span;
+use lex;
 
 
 #[derive(Clone, Debug)]
@@ -91,4 +92,60 @@ pub enum BinOpType {
     BitwiseOr,
     BitwiseAnd,
     BitwiseXor,
+}
+
+impl BinOpType {
+    pub fn from_token(tok: &lex::Token) -> Option<Self> {
+        use lex::Token::*;
+
+        match *tok {
+            // =   >   <   !   ~   ?   :   ->
+            Eq => None,
+            Gt => None,
+            Lt => None,
+            Bang => None,
+            Tilde => None,
+            Question => None,
+            Colon => None,
+            Arrow => None,
+
+            // ==  >=  <=  !=  &&  ||  ++  --
+            EqEq => None,
+            Ge => None,
+            Le => None,
+            Ne => None,
+            AndAnd => Some(BinOpType::LogicalAnd),
+            OrOr => Some(BinOpType::LogicalOr),
+            PlusPlus => None,
+            MinusMinus => None,
+
+            // +   -   *   /   &   |   ^   %   <<   >>   >>>
+            Plus => None,
+            Minus => None,
+            Star => None,
+            Slash => None,
+            And => Some(BinOpType::BitwiseAnd),
+            Or => Some(BinOpType::BitwiseOr),
+            Caret => Some(BinOpType::BitwiseXor),
+            Percent => None,
+            Shl => None,
+            Shr => None,
+            ShrUn => None,
+
+            // +=  -=  *=  /=  &=  |=  ^=  %=  <<=  >>=  >>>=
+            PlusEq => None,
+            MinusEq => None,
+            StarEq => None,
+            SlashEq => None,
+            AndEq => None,
+            OrEq => None,
+            CaretEq => None,
+            PercentEq => None,
+            ShlEq => None,
+            ShrEq => None,
+            ShrUnEq => None,
+
+            _ => None,
+        }
+    }
 }

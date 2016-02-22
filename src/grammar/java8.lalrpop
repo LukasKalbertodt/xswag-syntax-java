@@ -175,6 +175,19 @@ BinOp<L, O, R>: BinOpExpr = {
     },
 };
 
+BinOpLeftAssoc<O, N>: ast::ExprType = {
+    N => <>,
+    <lhs: Spanned<BinOpLeftAssoc<O, N>>> <op: O> <rhs: Spanned<N>> => {
+        ast::ExprType::BinOp {
+            // this macro is only used in the parser and we assume that the
+            // parser only specifies correct tokens (unwrap ok)
+            op: ast::BinOpType::from_token(&op).unwrap(),
+            lhs: lhs.into(),
+            rhs: rhs.into(),
+        }
+    },
+};
+
 // ===========================================================================
 // Helper grammar definitions that are used in several sections
 // ===========================================================================
@@ -844,12 +857,7 @@ InclusiveOrExpression: ast::ExprType = {
 
 
 // 15.23
-ConditionalAndExpression: ast::ExprType = {
-    InclusiveOrExpression,
-    BinOp<ConditionalAndExpression, "&&", InclusiveOrExpression> => {
-        <>.as_op(ast::BinOpType::LogicalAnd)
-    }
-};
+ConditionalAndExpression = BinOpLeftAssoc<"&&", InclusiveOrExpression>;
 
 // 15.24
 ConditionalOrExpression: ast::ExprType = {
