@@ -848,24 +848,13 @@ ExclusiveOrExpression: ast::ExprType = {
         }
     }
 };
-InclusiveOrExpression: ast::ExprType = {
-    ExclusiveOrExpression => <>,
-    BinOp<InclusiveOrExpression, "|", ExclusiveOrExpression> => {
-        <>.as_op(ast::BinOpType::BitwiseOr)
-    }
-};
-
+InclusiveOrExpression = BinOpLeftAssoc<"|", ExclusiveOrExpression>;
 
 // 15.23
 ConditionalAndExpression = BinOpLeftAssoc<"&&", InclusiveOrExpression>;
 
 // 15.24
-ConditionalOrExpression: ast::ExprType = {
-    ConditionalAndExpression => <>,
-    BinOp<ConditionalOrExpression, "||", ConditionalAndExpression> => {
-        <>.as_op(ast::BinOpType::LogicalOr)
-    }
-};
+ConditionalOrExpression = BinOpLeftAssoc<"||", ConditionalAndExpression>;
 
 // 15.25 TODO
 ConditionalExpression: ast::ExprType = {
