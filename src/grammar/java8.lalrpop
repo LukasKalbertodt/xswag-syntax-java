@@ -441,14 +441,14 @@ ClassDecl: ast::TypeDef = {
 NormalClassDecl: ast::Class = {
     <modifier: Spanned<Modifier>*>
         "class" <class_name: Ident>
-        <body: ClassBody> =>?
+        <body: ClassBody> =>
     {
-        // check modifier
-        Ok(ast::Class {
+        // TODO: check modifier
+        ast::Class {
             name: class_name,
             vis: ast::Visibility::Public,
             members: body,
-        })
+        }
     }
 };
 
