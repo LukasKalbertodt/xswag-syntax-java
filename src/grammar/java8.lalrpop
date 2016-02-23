@@ -25,7 +25,6 @@ use super::{
     get_strictfp,
     get_synchronized,
     get_visibility,
-    BinOpExpr,
 };
 
 grammar(errors: &mut Vec<Report>)["LALR"];
