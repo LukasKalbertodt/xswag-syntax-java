@@ -46,6 +46,10 @@ pub enum StatementType {
         then_branch: Box<Statement>,
         else_branch: Option<Box<Statement>>,
     },
+    While {
+        cond: Expr,
+        body: Box<Statement>,
+    }
 }
 
 #[derive(Clone, Debug)]

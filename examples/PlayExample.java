@@ -14,9 +14,7 @@ import AlgoTools.IO;
 
 public class HelloWorld {
     public static void main(String[] args) {
-        if (3 % 2 == 0)
+        while (3 % 2 == 0)
             IO.println("Hello World :)");
-        else
-            IO.println("Hello " + "fucker!");
     }
 }

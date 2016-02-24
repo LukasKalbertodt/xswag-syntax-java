@@ -800,6 +800,11 @@ Statement = {
         stmt: <>.inner,
         span: <>.span,
     },
+    Spanned<WhileStatement> => ast::Statement {
+        label: None,
+        stmt: <>.inner,
+        span: <>.span,
+    },
 };
 StatementNoShortIf = {
     StatementWithoutTrailingSubstatement,
@@ -901,6 +906,24 @@ IfThenElseStatementNoShortIf: ast::StatementType = {
             cond: cond,
             then_branch: Box::new(then),
             else_branch: Some(Box::new(else_branch)),
+        }
+    }
+};
+
+// 14.12
+WhileStatement: ast::StatementType = {
+    "while" "(" <cond: Expression> ")" <body: Statement> => {
+        ast::StatementType::While {
+            cond: cond,
+            body: Box::new(body),
+        }
+    }
+};
+WhileStatementNoShortIf: ast::StatementType = {
+    "while" "(" <cond: Expression> ")" <body: StatementNoShortIf> => {
+        ast::StatementType::While {
+            cond: cond,
+            body: Box::new(body),
         }
     }
 };
