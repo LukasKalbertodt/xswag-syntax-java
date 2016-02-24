@@ -113,26 +113,32 @@ pub enum BinOpType {
     XorAssign,
     OrAssign,
 
-    // Logical operators
+    // Logical operators ||  &&
     LogicalOr,
     LogicalAnd,
 
-    // Bitwise operators
+    // Bitwise operators |  &  ^
     BitwiseOr,
     BitwiseAnd,
     BitwiseXor,
-}
 
-#[derive(Clone, Copy, Debug)]
-pub enum UnaryOpType {
-    Plus,
-    Neg,
-    PreIncr,
-    PreDecr,
-    PostIncr,
-    PostDecr,
-    Not,
-    BitwiseNot,
+    // Comparison
+    Equals,
+    Gt,
+    Lt,
+    Ge,
+    Le,
+    Ne,
+
+    // Arithmetic
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Shl,
+    Shr,
+    ShrUn,
 }
 
 impl BinOpType {
@@ -142,36 +148,29 @@ impl BinOpType {
         match *tok {
             // =   >   <   !   ~   ?   :   ->
             Eq => Some(BinOpType::Assign),
-            Gt => None,
-            Lt => None,
-            Bang => None,
-            Tilde => None,
-            Question => None,
-            Colon => None,
-            Arrow => None,
+            Gt => Some(BinOpType::Gt),
+            Lt => Some(BinOpType::Lt),
 
             // ==  >=  <=  !=  &&  ||  ++  --
-            EqEq => None,
-            Ge => None,
-            Le => None,
-            Ne => None,
+            EqEq => Some(BinOpType::Equals),
+            Ge => Some(BinOpType::Ge),
+            Le => Some(BinOpType::Le),
+            Ne => Some(BinOpType::Ne),
             AndAnd => Some(BinOpType::LogicalAnd),
             OrOr => Some(BinOpType::LogicalOr),
-            PlusPlus => None,
-            MinusMinus => None,
 
             // +   -   *   /   &   |   ^   %   <<   >>   >>>
-            Plus => None,
-            Minus => None,
-            Star => None,
-            Slash => None,
+            Plus => Some(BinOpType::Add),
+            Minus => Some(BinOpType::Sub),
+            Star => Some(BinOpType::Mul),
+            Slash => Some(BinOpType::Div),
             And => Some(BinOpType::BitwiseAnd),
             Or => Some(BinOpType::BitwiseOr),
             Caret => Some(BinOpType::BitwiseXor),
-            Percent => None,
-            Shl => None,
-            Shr => None,
-            ShrUn => None,
+            Percent => Some(BinOpType::Mod),
+            Shl => Some(BinOpType::Shl),
+            Shr => Some(BinOpType::Shr),
+            ShrUn => Some(BinOpType::ShrUn),
 
             // +=  -=  *=  /=  &=  |=  ^=  %=  <<=  >>=  >>>=
             PlusEq => Some(BinOpType::AddAssign),
@@ -189,6 +188,18 @@ impl BinOpType {
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum UnaryOpType {
+    Plus,
+    Neg,
+    PreIncr,
+    PreDecr,
+    PostIncr,
+    PostDecr,
+    Not,
+    BitwiseNot,
 }
 
 #[derive(Clone, Debug)]
