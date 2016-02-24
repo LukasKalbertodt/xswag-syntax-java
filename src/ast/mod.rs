@@ -110,7 +110,7 @@ impl fmt::Debug for Ident {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Path {
     pub segments: Vec<Ident>,
 }
@@ -133,9 +133,25 @@ impl Path {
     }
 }
 
-// pub struct PathSegment {
+// custom `Debug` impl to shorten debug output and improve readability
+impl fmt::Debug for Path {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(span) = self.span() {
+            let mut p = self.segments
+                .first()
+                .map(|f| f.name.clone())
+                .unwrap_or_default();
+            for seg in &self.segments[1..] {
+                p.push('.');
+                p.push_str(&seg.name);
+            }
 
-// }
+            write!(f, r#"Path("{}" @ ({}, {}))"#, p, span.lo.0, span.hi.0)
+        } else {
+            write!(f, "Path(EMPTY)")
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Type {
