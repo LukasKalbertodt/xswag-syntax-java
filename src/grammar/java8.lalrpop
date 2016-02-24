@@ -844,7 +844,16 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
     ExpressionStatement,
     // AssertStatement,
     // SwitchStatement,
-    // DoStatement,
+    <l: @L> "do" <body: Statement> "while" "(" <cond: Expression> ")" <r: @R> => {
+        ast::Statement {
+            label: None,
+            stmt: ast::StatementType::DoWhile{
+                cond: cond,
+                body: Box::new(body),
+            },
+            span: Span::new(l, r),
+        }
+    },
     <l: @L> "break" <label: Ident?> ";" <r: @R> => {
         ast::Statement {
             label: None,
@@ -852,7 +861,13 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
             span: Span::new(l, r),
         }
     },
-    // ContinueStatement,
+    <l: @L> "continue" <label: Ident?> ";" <r: @R> => {
+        ast::Statement {
+            label: None,
+            stmt: ast::StatementType::Continue(label),
+            span: Span::new(l, r),
+        }
+    },
     // ReturnStatement,
     // SynchronizedStatement,
     // ThrowStatement,

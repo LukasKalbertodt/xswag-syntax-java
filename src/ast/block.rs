@@ -50,6 +50,10 @@ pub enum StatementType {
         cond: Expr,
         body: Box<Statement>,
     },
+    DoWhile {
+        cond: Expr,
+        body: Box<Statement>,
+    },
     For {
         init: ForInit,
         cond: Option<Expr>,
@@ -57,6 +61,7 @@ pub enum StatementType {
         body: Box<Statement>,
     },
     Break(Option<Ident>),
+    Continue(Option<Ident>),
 }
 
 #[derive(Clone, Debug)]
