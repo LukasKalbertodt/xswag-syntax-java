@@ -507,6 +507,7 @@ FieldDecl: Vec<ast::Field> = {
 };
 
 // 8.3
+// #[inline]
 UnannType: ast::Type = {
     <ty: UnannTypeWithoutDim> <dims: Dims> => {
         let mut ty = ty;
@@ -516,6 +517,7 @@ UnannType: ast::Type = {
 };
 
 // ~8.3 GENE, ANNO
+#[inline]
 UnannTypeWithoutDim: ast::Type = {
     // UnannPrimitiveType >> NumericType
     Spanned<NumericType> => ast::Type {
@@ -734,6 +736,7 @@ FloatingPointType = {
 };
 
 // 4.3 ANNO
+// #[inline]
 Dims: ast::Dims = {
     <dims: Spanned<("[" "]")*>> =>? {
         if dims.inner.len() > ast::Dims::max_value() as usize {
@@ -841,7 +844,20 @@ StatementExpression: ast::Statement = {
             label: None,
             stmt: ast::StatementType::Expr(<>.into()),
         }
-    }
+    },
+    Spanned<MethodInvocation> => {
+        ast::Statement {
+            span: <>.span,
+            label: None,
+            stmt: ast::StatementType::Expr(ast::Expr {
+                span: <>.span,
+                expr: ast::ExprType::MethodInvocation {
+                    name: <>.inner.0,
+                    args: <>.inner.1,
+                }
+            })
+        }
+    },
 };
 
 // 15.2
@@ -866,6 +882,10 @@ PrimaryNoNewArray: ast::ExprType = {
     ArrayAccess => ast::ExprType::ArrayAccess {
         obj: Box::new(<>.0),
         idx: Box::new(<>.1),
+    },
+    MethodInvocation => ast::ExprType::MethodInvocation {
+        name: <>.0,
+        args: <>.1,
     },
 };
 
@@ -919,6 +939,24 @@ FieldAccess: (Option<Box<ast::Expr>>, ast::Path) = {
     },
 };
 
+// 15.12 TODO GENE
+#[inline]
+MethodInvocation: (ast::MethodInvocationType, Vec<ast::Expr>) = {
+    <name: MethodName> "(" <args: ArgumentList?> ")" => {(
+        ast::MethodInvocationType::SimpleName(name),
+        args.unwrap_or_default(),
+    )},
+    <p: TypeName> "." <name: Ident> "(" <args: ArgumentList?> ")" => {(
+        ast::MethodInvocationType::SimplePath(p + name),
+        args.unwrap_or_default(),
+    )},
+    <p: Spanned<Primary>> "." <name: Ident> "(" <args: ArgumentList?> ")" => {(
+        ast::MethodInvocationType::Expr(p.into(), name),
+        args.unwrap_or_default(),
+    )},
+};
+ArgumentList = Comma<Expression>;
+
 // 15.14
 PostfixExpression: ast::ExprType = {
     Primary,
@@ -954,7 +992,7 @@ UnaryExpression: ast::ExprType = {
     UnaryExpressionNotPlusMinus,
 };
 UnaryExpressionNotPlusMinus: ast::ExprType = {
-    Primary,
+    PostfixExpression,
     "~" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
         op: ast::UnaryOpType::BitwiseNot,
         expr: <>.into(),
@@ -1063,3 +1101,4 @@ TypeName = Path;
 ExpressionName: ast::ExprType = {
     Path => ast::ExprType::Name(<>),
 };
+MethodName = Ident;

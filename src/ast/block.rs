@@ -86,6 +86,10 @@ pub enum ExprType {
         obj: Box<Expr>,
         idx: Box<Expr>,
     },
+    MethodInvocation {
+        name: MethodInvocationType,
+        args: Vec<Expr>,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -180,4 +184,11 @@ impl BinOpType {
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum MethodInvocationType {
+    SimpleName(Ident),
+    SimplePath(Path),
+    Expr(Box<Expr>, Ident),
 }
