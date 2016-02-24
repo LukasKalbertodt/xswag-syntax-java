@@ -831,6 +831,7 @@ StatementNoShortIf = {
         span: <>.span,
     },
 };
+// TODO
 StatementWithoutTrailingSubstatement: ast::Statement = {
     Spanned<Block> => {
         ast::Statement {
@@ -841,6 +842,21 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
     },
     EmptyStatement,
     ExpressionStatement,
+    // AssertStatement,
+    // SwitchStatement,
+    // DoStatement,
+    <l: @L> "break" <label: Ident?> ";" <r: @R> => {
+        ast::Statement {
+            label: None,
+            stmt: ast::StatementType::Break(label),
+            span: Span::new(l, r),
+        }
+    },
+    // ContinueStatement,
+    // ReturnStatement,
+    // SynchronizedStatement,
+    // ThrowStatement,
+    // TryStatement,
 };
 
 // 14.6

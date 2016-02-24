@@ -56,6 +56,7 @@ pub enum StatementType {
         update: Vec<Statement>,
         body: Box<Statement>,
     },
+    Break(Option<Ident>),
 }
 
 #[derive(Clone, Debug)]

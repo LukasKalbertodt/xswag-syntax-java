@@ -19,6 +19,7 @@ public class HelloWorld {
 
         for (int i = ~; i < 4; i += 1) {
             IO.println("Count: " + i);
+            break;
         }
     }
 }
