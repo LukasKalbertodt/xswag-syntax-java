@@ -906,10 +906,10 @@ UnaryExpressionNotPlusMinus: ast::ExprType = {
 
 // 15.17
 MultiplicativeExpression = {
-    Primary,
-    BinOp<MultiplicativeExpression, "*", Primary>,
-    BinOp<MultiplicativeExpression, "/", Primary>,
-    BinOp<MultiplicativeExpression, "%", Primary>,
+    UnaryExpression,
+    BinOp<MultiplicativeExpression, "*", UnaryExpression>,
+    BinOp<MultiplicativeExpression, "/", UnaryExpression>,
+    BinOp<MultiplicativeExpression, "%", UnaryExpression>,
 };
 
 // 15.18
