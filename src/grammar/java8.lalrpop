@@ -892,6 +892,18 @@ IfThenElseStatement: ast::StatementType = {
         }
     }
 };
+IfThenElseStatementNoShortIf: ast::StatementType = {
+    "if" "(" <cond: Expression> ")"
+        <then: StatementNoShortIf>
+        "else" <else_branch: StatementNoShortIf> =>
+    {
+        ast::StatementType::IfThenElse {
+            cond: cond,
+            then_branch: Box::new(then),
+            else_branch: Some(Box::new(else_branch)),
+        }
+    }
+};
 
 // 15.2
 Expression: ast::Expr = {
