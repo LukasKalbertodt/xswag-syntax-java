@@ -56,7 +56,7 @@ fn check_allowed_modifier(actual: &Mods, allowed: &[lex::Keyword], ctx: &str)
 fn get_visibility(mods: &Mods, errors: &mut Vec<Report>)
     -> Option<ast::Visibility>
 {
-    use lex::{Token, Keyword};
+    use lex::Keyword;
 
     let mut vis = None;
     let mut first_vis = None;
