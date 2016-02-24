@@ -25,6 +25,7 @@ use super::{
     get_strictfp,
     get_synchronized,
     get_visibility,
+    unwrap_keyword,
 };
 
 grammar(errors: &mut Vec<Report>)["LALR"];
@@ -203,7 +204,8 @@ ModifierImpl = {
 };
 #[inline]
 Modifier: Keyword = {
-    ModifierImpl => if let Token::KeyW(kw) = <> { kw } else { unreachable!() }
+    // ModifierImpl => if let Token::KeyW(kw) = <> { kw } else { unreachable!() }
+    ModifierImpl => unwrap_keyword(&<>),
 };
 
 #[inline]
@@ -704,15 +706,15 @@ MethodBody: Option<ast::Block> = {
 // ~~~ Section 4 [ANNO, -] ~~~
 
 // 4.2 ANNO
-PrimitiveType = {
+PrimitiveType: lex::Keyword = {
     NumericType,
-    "boolean",
+    "boolean" => unwrap_keyword(&<>),
 };
 
 // 4.2
-NumericType = {
-    IntegralType,
-    FloatingPointType,
+NumericType: lex::Keyword = {
+    IntegralType => unwrap_keyword(&<>),
+    FloatingPointType => unwrap_keyword(&<>),
 };
 
 // 4.2

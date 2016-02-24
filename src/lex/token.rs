@@ -53,6 +53,16 @@ macro_rules! to_java_string {
     }
 }
 
+macro_rules! into_str {
+    ($name:ident; $($variant:ident = $val:expr),+) => {
+        impl Into<String> for $name {
+            fn into(self) -> String {
+                self.as_java_string().into()
+            }
+        }
+    }
+}
+
 macro_rules! display {
     ($name:ident; $($variant:ident = $val:expr),+) => {
         impl Display for $name {
@@ -271,7 +281,7 @@ gen_enum! {
     /// Represents one of the Java keywords
     #[derive(Copy, Clone, PartialEq, Eq, Debug)]
     pub enum Keyword;
-    with to_java_string, display, from_str for:
+    with to_java_string, display, from_str, into_str for:
 
     Abstract = "abstract",
     Assert = "assert",

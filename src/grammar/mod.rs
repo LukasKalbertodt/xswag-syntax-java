@@ -110,3 +110,7 @@ gen_finder!(get_native, Native);
 gen_finder!(get_static, Static);
 gen_finder!(get_strictfp, Strictfp);
 gen_finder!(get_synchronized, Synchronized);
+
+fn unwrap_keyword(tok: &lex::Token) -> lex::Keyword {
+    if let &lex::Token::KeyW(kw) = tok { kw } else { unreachable!() }
+}

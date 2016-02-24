@@ -94,6 +94,15 @@ impl Into<Box<Expr>> for Spanned<ExprType> {
     }
 }
 
+impl<T> Into<Ident> for Spanned<T> where T: Into<String> + Clone + fmt::Debug {
+    fn into(self) -> Ident {
+        Ident {
+            name: self.inner.into(),
+            span: self.span,
+        }
+    }
+}
+
 impl<T> marker::Copy for Spanned<T> where T: Copy + fmt::Debug {}
 
 #[derive(Clone)]
