@@ -62,6 +62,7 @@ pub enum StatementType {
     },
     Break(Option<Ident>),
     Continue(Option<Ident>),
+    Return(Option<Expr>),
 }
 
 #[derive(Clone, Debug)]
