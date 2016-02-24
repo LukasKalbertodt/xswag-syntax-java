@@ -6,7 +6,7 @@ build = "build.rs"
 
 [dependencies.xswag-base]
 git = "https://github.com/LukasKalbertodt/xswag-base"
-branch = "pre-rel"
+branch = "master"
 
 [build-dependencies]
 lalrpop = "0.10.0"
