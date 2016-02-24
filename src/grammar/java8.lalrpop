@@ -790,6 +790,16 @@ LocalVariableDeclStatement: ast::BlockStatement = {
 Statement = {
     StatementWithoutTrailingSubstatement,
     LabeledStatement,
+    Spanned<IfThenStatement> => ast::Statement {
+        label: None,
+        stmt: <>.inner,
+        span: <>.span,
+    },
+    Spanned<IfThenElseStatement> => ast::Statement {
+        label: None,
+        stmt: <>.inner,
+        span: <>.span,
+    },
 };
 StatementNoShortIf = {
     StatementWithoutTrailingSubstatement,
@@ -858,6 +868,29 @@ StatementExpression: ast::Statement = {
             })
         }
     },
+};
+
+// 14.9
+IfThenStatement: ast::StatementType = {
+    "if" "(" <cond: Expression> ")" <then: Statement> => {
+        ast::StatementType::IfThenElse {
+            cond: cond,
+            then_branch: Box::new(then),
+            else_branch: None,
+        }
+    },
+};
+IfThenElseStatement: ast::StatementType = {
+    "if" "(" <cond: Expression> ")"
+        <then: StatementNoShortIf>
+        "else" <else_branch: Statement> =>
+    {
+        ast::StatementType::IfThenElse {
+            cond: cond,
+            then_branch: Box::new(then),
+            else_branch: Some(Box::new(else_branch)),
+        }
+    }
 };
 
 // 15.2

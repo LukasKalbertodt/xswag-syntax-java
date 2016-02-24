@@ -41,6 +41,11 @@ pub enum StatementType {
     Empty,
     Block(Block),
     Expr(Expr),
+    IfThenElse {
+        cond: Expr,
+        then_branch: Box<Statement>,
+        else_branch: Option<Box<Statement>>,
+    },
 }
 
 #[derive(Clone, Debug)]
