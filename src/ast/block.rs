@@ -49,7 +49,13 @@ pub enum StatementType {
     While {
         cond: Expr,
         body: Box<Statement>,
-    }
+    },
+    For {
+        init: ForInit,
+        cond: Option<Expr>,
+        update: Vec<Statement>,
+        body: Box<Statement>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -211,4 +217,10 @@ pub enum MethodInvocationType {
     SimpleName(Ident),
     SimplePath(Path),
     Expr(Box<Expr>, Ident),
+}
+
+#[derive(Clone, Debug)]
+pub enum ForInit {
+    VarDecl(Box<BlockStatement>),
+    Stmts(Vec<Statement>),
 }

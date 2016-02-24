@@ -776,8 +776,9 @@ BlockStatement: ast::BlockStatement = {
 };
 
 // 14.4 ANNO
-LocalVariableDeclStatement: ast::BlockStatement = {
-    <final_: "final"?> <ty: UnannType> <decls: VariableDeclaratorList> ";" => {
+LocalVariableDeclStatement = <LocalVariableDecl> ";";
+LocalVariableDecl: ast::BlockStatement = {
+    <final_: "final"?> <ty: UnannType> <decls: VariableDeclaratorList> => {
         ast::BlockStatement::LocalVariableDecl {
             final_: final_.is_some(),
             ty: ty,
@@ -801,6 +802,11 @@ Statement = {
         span: <>.span,
     },
     Spanned<WhileStatement> => ast::Statement {
+        label: None,
+        stmt: <>.inner,
+        span: <>.span,
+    },
+    Spanned<ForStatement> => ast::Statement {
         label: None,
         stmt: <>.inner,
         span: <>.span,
@@ -927,6 +933,52 @@ WhileStatementNoShortIf: ast::StatementType = {
         }
     }
 };
+
+// 14.14 TODO
+ForStatement = {
+    BasicForStatement,
+    // EnhancedForStatement,
+};
+ForStatementNoShortIf = {
+    BasicForStatementNoShortIf,
+    // EnhancedForStatement,
+};
+
+// 14.14.1
+BasicForStatement: ast::StatementType = {
+    "for" "(" <init: ForInit> ";"
+        <cond: Expression?> ";"
+        <update: ForUpdate?> ")"
+        <body: Statement> =>
+    {
+        ast::StatementType::For {
+            init: init,
+            cond: cond,
+            update: update.unwrap_or_default(),
+            body: Box::new(body),
+        }
+    }
+};
+BasicForStatementNoShortIf: ast::StatementType = {
+    "for" "(" <init: ForInit> ";"
+        <cond: Expression?> ";"
+        <update: ForUpdate?> ")"
+        <body: StatementNoShortIf> =>
+    {
+        ast::StatementType::For {
+            init: init,
+            cond: cond,
+            update: update.unwrap_or_default(),
+            body: Box::new(body),
+        }
+    }
+};
+ForInit: ast::ForInit = {
+    StatementExpressionList? => ast::ForInit::Stmts(<>.unwrap_or_default()),
+    LocalVariableDecl => ast::ForInit::VarDecl(Box::new(<>)),
+};
+ForUpdate = StatementExpressionList;
+StatementExpressionList = Comma<StatementExpression>;
 
 // 15.2
 Expression: ast::Expr = {

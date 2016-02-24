@@ -28,6 +28,7 @@ pub use self::block::{
     BinOpType,
     UnaryOpType,
     MethodInvocationType,
+    ForInit,
 };
 
 use std::fmt::{Display, Formatter, Error};
