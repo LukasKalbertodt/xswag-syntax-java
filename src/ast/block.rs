@@ -71,8 +71,21 @@ pub enum ExprType {
         op: UnaryOpType,
         expr: Box<Expr>,
     },
+
+    // PrimaryNoNewArray
     Literal(lex::Lit),
+    ClassLiteral(Type),
     Name(Path),
+    This,
+    // TypeNameThis,
+    FieldAccess {
+        root: Option<Box<Expr>>,
+        path: Path,
+    },
+    ArrayAccess {
+        obj: Box<Expr>,
+        idx: Box<Expr>,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]

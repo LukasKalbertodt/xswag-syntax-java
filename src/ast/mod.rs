@@ -35,6 +35,7 @@ use std::vec::Vec;
 use std::default::Default;
 use std::fmt;
 use std::marker;
+use std::ops;
 
 macro_rules! java_enum { (
     $name:ident { $( $variant:ident => $java_word:expr, )* }
@@ -138,6 +139,39 @@ impl Path {
                 hi: last.span.hi
             }),
             _ => None,
+        }
+    }
+}
+
+impl ops::Add for Path {
+    type Output = Path;
+    fn add(mut self, mut rhs: Path) -> Self::Output {
+        self.segments.append(&mut rhs.segments);
+        self
+    }
+}
+
+impl ops::Add<Ident> for Path {
+    type Output = Path;
+    fn add(mut self, rhs: Ident) -> Self::Output {
+        self.segments.push(rhs);
+        self
+    }
+}
+
+impl ops::Add<Path> for Ident {
+    type Output = Path;
+    fn add(self, mut rhs: Path) -> Self::Output {
+        rhs.segments.insert(0, self);
+        rhs
+    }
+}
+
+impl ops::Add for Ident {
+    type Output = Path;
+    fn add(self, rhs: Ident) -> Self::Output {
+        Path {
+            segments: vec![self, rhs],
         }
     }
 }

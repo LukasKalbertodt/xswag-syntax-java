@@ -204,7 +204,6 @@ ModifierImpl = {
 };
 #[inline]
 Modifier: Keyword = {
-    // ModifierImpl => if let Token::KeyW(kw) = <> { kw } else { unreachable!() }
     ModifierImpl => unwrap_keyword(&<>),
 };
 
@@ -856,7 +855,68 @@ Primary = {
 };
 PrimaryNoNewArray: ast::ExprType = {
     Literal => ast::ExprType::Literal(<>),
+    "this" => ast::ExprType::This,
+    // TODO: causes SR-conflict
+    // ClassLiteral => ast::ExprType::ClassLiteral(<>),
     "(" <Expression> ")" => <>.expr,
+    FieldAccess => ast::ExprType::FieldAccess {
+        root: <>.0,
+        path: <>.1,
+    },
+    ArrayAccess => ast::ExprType::ArrayAccess {
+        obj: Box::new(<>.0),
+        idx: Box::new(<>.1),
+    },
+};
+
+// 15.8.2
+ClassLiteral: ast::Type = {
+    <name: TypeName> <dims: Dims> "." "class" => {
+        ast::Type { name: name, dims: dims }
+    },
+    <name: Spanned<NumericType>> <dims: Dims> "." "class" => {
+        ast::Type {
+            name: ast::Path::single(name.into()),
+            dims: dims,
+        }
+    },
+    <name: Spanned<"boolean">> <dims: Dims> "." "class" => {
+        ast::Type {
+            name: ast::Path::single(ast::Ident {
+                name: unwrap_keyword(&name.inner).into(),
+                span: name.span,
+            }),
+            dims: dims,
+        }
+    },
+    <Spanned<"void">> "." "class" => {
+        ast::Type {
+            name: ast::Path::single(ast::Ident {
+                name: unwrap_keyword(&<>.inner).into(),
+                span: <>.span,
+            }),
+            dims: 0,
+        }
+    },
+};
+
+// 15.10.3
+ArrayAccess: (ast::Expr, ast::Expr) = {
+    <lhs: Spanned<ExpressionName>> "[" <idx: Expression> "]" => (lhs.into(), idx),
+    <lhs: Spanned<PrimaryNoNewArray>> "[" <idx: Expression> "]" => (lhs.into(), idx),
+};
+
+// 15.11
+FieldAccess: (Option<Box<ast::Expr>>, ast::Path) = {
+    <r: Spanned<Primary>> "." <p: Ident> => {
+        (Some(Box::new(r.into())), ast::Path::single(p))
+    },
+    <h: Spanned<"super">> "." <t: Ident> => {
+        (None, ast::Ident { name: "super".into(), span: h.span } + t)
+    },
+    <p: TypeName> "." <sup: Spanned<"super">> "." <last: Ident> => {
+        (None, p + ast::Ident { name: "super".into(), span: sup.span } + last)
+    },
 };
 
 // 15.14
@@ -997,6 +1057,9 @@ AssignmentOperator = {
 };
 
 // 6.5
+#[inline]
+TypeName = Path;
+#[inline]
 ExpressionName: ast::ExprType = {
     Path => ast::ExprType::Name(<>),
 };
