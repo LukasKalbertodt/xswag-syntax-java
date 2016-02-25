@@ -858,7 +858,7 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
     ExpressionStatement,
     // AssertStatement,
     // SwitchStatement,
-    <l: @L> "do" <body: Statement> "while" "(" <cond: Expression> ")" <r: @R> => {
+    <l: @L> "do" <body: Statement> "while" "(" <cond: Expression> ")" ";" <r: @R> => {
         ast::Statement {
             label: None,
             stmt: ast::StatementType::DoWhile{

@@ -17,9 +17,8 @@ public class HelloWorld {
         while (3 % 2 == 0)
             IO.println("Hello World :)");
 
-        for (int i = ~; i < 4; i += 1) {
+        for (int i = ~; i < 4; i++) {
             IO.println("Count: " + i);
-            break;
         }
     }
 }
