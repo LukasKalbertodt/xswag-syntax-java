@@ -166,8 +166,7 @@ Comma<T>: Vec<T> = {
 
 #[inline]
 Spanned<T>: ast::Spanned<T> = {
-    // <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
-    <t:T> => ast::Spanned { inner: t, span: Span::dummy() },
+    <l:@L> <t:T> <r:@R> => ast::Spanned { inner: t, span: Span::new(l, r) },
 };
 
 #[inline]
