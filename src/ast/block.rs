@@ -112,6 +112,9 @@ pub enum ExprType {
         name: MethodInvocationType,
         args: Vec<Expr>,
     },
+    ArrayInit {
+        items: Vec<Expr>,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
