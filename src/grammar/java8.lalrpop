@@ -302,6 +302,7 @@ ReferenceType = UnannReferenceType;
 InterfaceType = ClassType;
 #[inline]
 ClassType = UnannClassType;
+ArrayType = UnannArrayType;
 // ArrayType: ast::Type = {
 //     <ty: PrimitiveType> <dims: Dims> => {
 //         ast::Type {
@@ -593,7 +594,7 @@ FieldDecl: Vec<ast::Field> = {
 // #[inline]
 UnannType: ast::Type = {
     UnannPrimitiveType,
-    // UnannReferenceType, TODO: add again
+    UnannReferenceType,
 };
 
 // 8.3 ANNO GENE
@@ -604,8 +605,9 @@ UnannPrimitiveType: ast::Type = {
         ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
     ),
 };
-#[inline] UnannReferenceType = { UnannInterfaceType, UnannClassType, UnannArrayType };
-#[inline] UnannInterfaceType = UnannClassType;
+// #[inline] UnannReferenceType = { UnannClassType, UnannArrayType };
+UnannReferenceType = { UnannClassType, UnannArrayType };
+// UnannInterfaceType = UnannClassType;
 #[inline] UnannClassType: ast::Type = Path => ast::Type::without_dims(<>);
 UnannArrayType: ast::Type = {
     <ty: UnannPrimitiveType> <dims: Dims> => {
@@ -614,39 +616,13 @@ UnannArrayType: ast::Type = {
             dims: dims,
         }
     },
+    <ty: UnannClassType> <dims: Dims> => {
+        ast::Type {
+            name: ty.name,
+            dims: dims,
+        }
+    },
 };
-
-// ~8.3 GENE, ANNO
-// #[inline]
-// UnannTypeWithoutDim: ast::Type = {
-//     // UnannPrimitiveType >> NumericType
-//     NumericType,
-//     // Spanned<NumericType> => ast::Type {
-//     //     name: ast::Path::single(ast::Ident {
-//     //         name: <>.inner.to_string(),
-//     //         span: <>.span,
-//     //     }),
-//     //     dims: 0,
-//     // },
-//     // UnannPrimitiveType >> "boolean"
-//     Spanned<"boolean"> => ast::Type::without_dims(
-//         ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
-//     ),
-//     // UnannReferenceType >> UnannClassOrInterfaceType GENE, ANNO
-//     Path => ast::Type::without_dims(<>),
-
-//     // UnannReferenceType >> UnannTypeVariable GENE, ANNO
-//     // GENE: put this in again
-//     // UnannTypeVariable => ast::Type {
-//     //     name: <>,
-//     // },
-// };
-
-// 8.3 GENE
-// UnannTypeVariable = Ident;
-
-
-
 
 // 8.3
 VariableDeclaratorList = Comma<VariableDeclarator>;
