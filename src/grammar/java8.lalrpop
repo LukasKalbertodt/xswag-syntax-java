@@ -390,7 +390,7 @@ ConstantDecl: Vec<ast::Field> = {
     <var_decls: VariableDeclaratorList> ";" => {
         check_mods!(errors, "constant", mods, [Public, Static, Final]);
 
-        var_decls.into_iter().map(|(ident, dims)| {
+        var_decls.into_iter().map(|ast::VariableDeclarator { name, dims, init }| {
             let mut ty = ty.clone();
             ty.dims += dims;
 
@@ -399,7 +399,8 @@ ConstantDecl: Vec<ast::Field> = {
                 static_: true,
                 final_: true,
                 ty: ty.clone(),
-                name: ident,
+                name: name,
+                // init: init, TODO
             }
         }).collect()
     }
@@ -506,7 +507,7 @@ FieldDecl: Vec<ast::Field> = {
         //     ]
         // );
 
-        decls.into_iter().map(|(ident, dims)| {
+        decls.into_iter().map(|ast::VariableDeclarator { name, dims, init }| {
             let mut ty = ty.clone();
             ty.dims += dims;
             ast::Field {
@@ -514,7 +515,7 @@ FieldDecl: Vec<ast::Field> = {
                 static_: false,
                 final_: false,
                 ty: ty,
-                name: ident,
+                name: name,
             }
         }).collect()
     }
@@ -572,8 +573,14 @@ UnannTypeWithoutDim: ast::Type = {
 VariableDeclaratorList = Comma<VariableDeclarator>;
 
 // 8.3
-VariableDeclarator = {
-    <VariableDeclaratorId> ("=" <VariableInitializer>)?
+VariableDeclarator: ast::VariableDeclarator = {
+    <id: VariableDeclaratorId> <init: ("=" <VariableInitializer>)?> => {
+        ast::VariableDeclarator {
+            name: id.0,
+            dims: id.1,
+            init: init,
+        }
+    }
 };
 
 // 8.3
@@ -582,7 +589,10 @@ VariableDeclaratorId = {
 };
 
 // 8.3 TODO
-VariableInitializer = "~";
+VariableInitializer: ast::Expr = {
+    Expression,
+    // ArrayInitializer,
+};
 
 // 8.4 ANNO
 MethodDecl: ast::Method = {

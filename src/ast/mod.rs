@@ -29,6 +29,7 @@ pub use self::block::{
     UnaryOpType,
     MethodInvocationType,
     ForInit,
+    VariableDeclarator,
 };
 
 use std::fmt::{Display, Formatter, Error};

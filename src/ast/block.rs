@@ -23,7 +23,7 @@ pub enum BlockStatement {
     LocalVariableDecl {
         final_: bool,
         ty: Type,
-        vars: Vec<(Ident, Dims)>,
+        vars: Vec<VariableDeclarator>,
     },
     // ClassDecl,
     Statement(Statement),
@@ -230,4 +230,11 @@ pub enum MethodInvocationType {
 pub enum ForInit {
     VarDecl(Box<BlockStatement>),
     Stmts(Vec<Statement>),
+}
+
+#[derive(Clone, Debug)]
+pub struct VariableDeclarator {
+    pub name: Ident,
+    pub dims: Dims,
+    pub init: Option<Expr>,
 }
