@@ -274,6 +274,7 @@ FloatingPointType = {
 };
 
 // 4.3 ANNO
+#[inline]
 DimsOpt: ast::Dims = {
     Dims? => <>.unwrap_or(0),
 };
@@ -1066,16 +1067,18 @@ Expression: ast::Expr = {
     Spanned<AssignmentExpression> => <>.into(),
 };
 
-// 15.8
+// 15.8 TODO
 Primary = {
     PrimaryNoNewArray,
+    // ArrayCreationExpression,
 };
 PrimaryNoNewArray: ast::ExprType = {
     Literal => ast::ExprType::Literal(<>),
+    ClassLiteral => ast::ExprType::ClassLiteral(<>),
     "this" => ast::ExprType::This,
-    // TODO: causes SR-conflict
-    // ClassLiteral => ast::ExprType::ClassLiteral(<>),
+    // TypeName . this
     "(" <Expression> ")" => <>.expr,
+    // ClassInstanceCreationExpression
     FieldAccess => ast::ExprType::FieldAccess {
         root: <>.0,
         path: <>.1,
@@ -1088,6 +1091,7 @@ PrimaryNoNewArray: ast::ExprType = {
         name: <>.0,
         args: <>.1,
     },
+    // MethodReference,
 };
 
 // 15.8.2
