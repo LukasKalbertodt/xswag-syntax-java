@@ -74,6 +74,18 @@ pub struct Spanned<T: Clone + fmt::Debug> {
     pub span: Span,
 }
 
+impl<T: Clone + fmt::Debug> Spanned<T> {
+    pub fn map<F, U>(self, f: F) -> Spanned<U>
+        where F: FnOnce(T) -> U,
+              U: Clone + fmt::Debug
+    {
+        Spanned {
+            inner: f(self.inner),
+            span: self.span,
+        }
+    }
+}
+
 impl Into<Expr> for Spanned<ExprType> {
     fn into(self) -> Expr {
         Expr {

@@ -240,8 +240,84 @@ Path: ast::Path = {
     }
 };
 
+// ----------------------------------------------------------------------------
+// ~~~ Section 4 [ANNO, -] ~~~
+
+// 4.2 ANNO
+PrimitiveType: ast::Type = {
+    NumericType,
+    Spanned<"boolean"> => ast::Type {
+        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
+        dims: 0,
+    },
+};
+
+// 4.2
+NumericType: ast::Type = {
+    Spanned<IntegralType> => ast::Type {
+        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
+        dims: 0,
+    },
+    Spanned<FloatingPointType> => ast::Type {
+        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
+        dims: 0,
+    },
+};
+
+// 4.2
+#[inline]
+IntegralType = {
+    "byte",
+    "short",
+    "int",
+    "long",
+    "char",
+};
+
+// 4.2
+#[inline]
+FloatingPointType = {
+    "float",
+    "double",
+};
+
+// 4.3 ANNO
+DimsOpt: ast::Dims = {
+    Dims? => <>.unwrap_or(0),
+};
+Dims: ast::Dims = {
+    <dims: Spanned<("[" "]")+>> =>? {
+        if dims.inner.len() > ast::Dims::max_value() as usize {
+            Err(ParseError::User {
+                error: Report::simple_error(
+                    format!(
+                        "too many dimensions! Do you really need a {} \
+                            dimensional array?",
+                        dims.inner.len(),
+                    ),
+                    dims.span,
+                )
+            })
+        } else {
+            Ok(dims.inner.len() as ast::Dims)
+        }
+    } ,
+};
+
+// 4.3 ANNO
+ReferenceType = { InterfaceType, ClassType, ArrayType };
+#[inline]
 InterfaceType = ClassType;
-ClassType = Path;
+#[inline]
+ClassType: ast::Type = Path => ast::Type { name: <>, dims: 0 };
+ArrayType: ast::Type = {
+    <ty: PrimitiveType> <dims: Dims> => {
+        ast::Type {
+            name: ty.name,
+            dims: dims,
+        }
+    },
+};
 
 // ===========================================================================
 // Grammar definitions in a top-down fashion/depth first search order
@@ -362,7 +438,7 @@ NormalInterfaceDecl: ast::Interface = {
             vis: get_visibility(&mods, errors).unwrap_or(ast::Visibility::Package),
             static_: get_static(&mods).is_some(),
             strictfp: get_strictfp(&mods).is_some(),
-            extends: extends.unwrap_or(Vec::new()),
+            extends: extends.unwrap_or_default(),
             types: types,
             constants: constants,
             methods: methods,
@@ -524,7 +600,7 @@ FieldDecl: Vec<ast::Field> = {
 // 8.3
 // #[inline]
 UnannType: ast::Type = {
-    <ty: UnannTypeWithoutDim> <dims: Dims> => {
+    <ty: UnannTypeWithoutDim> <dims: DimsOpt> => {
         let mut ty = ty;
         ty.dims = dims;
         ty
@@ -535,19 +611,17 @@ UnannType: ast::Type = {
 #[inline]
 UnannTypeWithoutDim: ast::Type = {
     // UnannPrimitiveType >> NumericType
-    Spanned<NumericType> => ast::Type {
-        name: ast::Path::single(ast::Ident {
-            name: <>.inner.to_string(),
-            span: <>.span,
-        }),
-        dims: 0,
-    },
+    NumericType,
+    // Spanned<NumericType> => ast::Type {
+    //     name: ast::Path::single(ast::Ident {
+    //         name: <>.inner.to_string(),
+    //         span: <>.span,
+    //     }),
+    //     dims: 0,
+    // },
     // UnannPrimitiveType >> "boolean"
     Spanned<"boolean"> => ast::Type {
-        name: ast::Path::single(ast::Ident {
-            name: "boolean".into(),
-            span: <>.span,
-        }),
+        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
         dims: 0,
     },
     // UnannReferenceType >> UnannClassOrInterfaceType GENE, ANNO
@@ -585,7 +659,7 @@ VariableDeclarator: ast::VariableDeclarator = {
 
 // 8.3
 VariableDeclaratorId = {
-    <Ident> <Dims>
+    <Ident> <DimsOpt>
 };
 
 // 8.3 TODO
@@ -681,7 +755,7 @@ MethodHeader: (ast::Type, ast::Ident, Vec<ast::FormalParameter>) = {
 
 // 8.4 TODO
 MethodDeclarator = {
-    <Ident> "(" <FormalParameterList?> ")" <Dims>
+    <Ident> "(" <FormalParameterList?> ")" <DimsOpt>
 };
 
 // 8.4.1 TODO
@@ -726,59 +800,6 @@ MethodBody: Option<ast::Block> = {
     Block => Some(<>),
 };
 
-
-// ----------------------------------------------------------------------------
-// ~~~ Section 4 [ANNO, -] ~~~
-
-// 4.2 ANNO
-PrimitiveType: lex::Keyword = {
-    NumericType,
-    "boolean" => unwrap_keyword(&<>),
-};
-
-// 4.2
-NumericType: lex::Keyword = {
-    IntegralType => unwrap_keyword(&<>),
-    FloatingPointType => unwrap_keyword(&<>),
-};
-
-// 4.2
-#[inline]
-IntegralType = {
-    "byte",
-    "short",
-    "int",
-    "long",
-    "char",
-};
-
-// 4.2
-#[inline]
-FloatingPointType = {
-    "float",
-    "double",
-};
-
-// 4.3 ANNO
-// #[inline]
-Dims: ast::Dims = {
-    <dims: Spanned<("[" "]")*>> =>? {
-        if dims.inner.len() > ast::Dims::max_value() as usize {
-            Err(ParseError::User {
-                error: Report::simple_error(
-                    format!(
-                        "too many dimensions! Do you really need a {} \
-                            dimensional array?",
-                        dims.inner.len(),
-                    ),
-                    dims.span,
-                )
-            })
-        } else {
-            Ok(dims.inner.len() as ast::Dims)
-        }
-    } ,
-};
 
 // ----------------------------------------------------------------------------
 // ~~~ Section 14 [TODO] ~~~
@@ -1094,16 +1115,16 @@ PrimaryNoNewArray: ast::ExprType = {
 
 // 15.8.2
 ClassLiteral: ast::Type = {
-    <name: TypeName> <dims: Dims> "." "class" => {
+    <name: TypeName> <dims: DimsOpt> "." "class" => {
         ast::Type { name: name, dims: dims }
     },
-    <name: Spanned<NumericType>> <dims: Dims> "." "class" => {
+    <name: NumericType> <dims: DimsOpt> "." "class" => {
         ast::Type {
-            name: ast::Path::single(name.into()),
+            name: name.name,
             dims: dims,
         }
     },
-    <name: Spanned<"boolean">> <dims: Dims> "." "class" => {
+    <name: Spanned<"boolean">> <dims: DimsOpt> "." "class" => {
         ast::Type {
             name: ast::Path::single(ast::Ident {
                 name: unwrap_keyword(&name.inner).into(),
@@ -1220,7 +1241,23 @@ UnaryExpressionNotPlusMinus: ast::ExprType = {
         op: ast::UnaryOpType::Not,
         expr: <>.into(),
     },
-    // CastExpression
+    CastExpression,
+};
+
+// 15.16 GENE LAMBDA
+CastExpression: ast::ExprType = {
+    "(" <ty: PrimitiveType> ")" <expr: Spanned<UnaryExpression>> => {
+        ast::ExprType::Cast {
+            ty: ty,
+            expr: expr.into(),
+        }
+    },
+    // "(" <ty: ReferenceType> ")" <expr: Spanned<UnaryExpressionNotPlusMinus>> => {
+    //     ast::ExprType::Cast {
+    //         ty: ty,
+    //         expr: expr.into(),
+    //     }
+    // },
 };
 
 // 15.17

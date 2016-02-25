@@ -115,6 +115,10 @@ pub enum ExprType {
     ArrayInit {
         items: Vec<Expr>,
     },
+    Cast {
+        ty: Type,
+        expr: Box<Expr>,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]

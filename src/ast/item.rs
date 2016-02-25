@@ -99,7 +99,7 @@ pub struct Interface {
     pub vis: Visibility,
     pub static_: bool,
     pub strictfp: bool,
-    pub extends: Vec<Path>,
+    pub extends: Vec<Type>,
     pub types: Vec<TypeDef>,
     pub constants: Vec<Field>,
     pub methods: Vec<Method>,
