@@ -217,6 +217,24 @@ pub struct Type {
     pub dims: Dims,
 }
 
+impl Type {
+    pub fn without_dims(name: Path) -> Type {
+        Type {
+            name: name,
+            dims: 0,
+        }
+    }
+
+    pub fn map_dims<F>(self, f: F) -> Type
+        where F: FnOnce(Dims) -> Dims
+    {
+        Type {
+            name: self.name,
+            dims: f(self.dims),
+        }
+    }
+}
+
 
 // ============================================================================
 // Top-Down AST definition starting with the goal symbol

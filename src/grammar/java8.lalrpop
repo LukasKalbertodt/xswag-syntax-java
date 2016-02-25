@@ -244,24 +244,16 @@ Path: ast::Path = {
 // ~~~ Section 4 [ANNO, -] ~~~
 
 // 4.2 ANNO
-PrimitiveType: ast::Type = {
-    NumericType,
-    Spanned<"boolean"> => ast::Type {
-        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
-        dims: 0,
-    },
-};
+PrimitiveType = UnannPrimitiveType;
 
 // 4.2
 NumericType: ast::Type = {
-    Spanned<IntegralType> => ast::Type {
-        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
-        dims: 0,
-    },
-    Spanned<FloatingPointType> => ast::Type {
-        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
-        dims: 0,
-    },
+    Spanned<IntegralType> => ast::Type::without_dims(
+        ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
+    ),
+    Spanned<FloatingPointType> => ast::Type::without_dims(
+        ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
+    ),
 };
 
 // 4.2
@@ -305,19 +297,19 @@ Dims: ast::Dims = {
 };
 
 // 4.3 ANNO
-ReferenceType = { InterfaceType, ClassType, ArrayType };
+ReferenceType = UnannReferenceType;
 #[inline]
 InterfaceType = ClassType;
 #[inline]
-ClassType: ast::Type = Path => ast::Type { name: <>, dims: 0 };
-ArrayType: ast::Type = {
-    <ty: PrimitiveType> <dims: Dims> => {
-        ast::Type {
-            name: ty.name,
-            dims: dims,
-        }
-    },
-};
+ClassType = UnannClassType;
+// ArrayType: ast::Type = {
+//     <ty: PrimitiveType> <dims: Dims> => {
+//         ast::Type {
+//             name: ty.name,
+//             dims: dims,
+//         }
+//     },
+// };
 
 // ===========================================================================
 // Grammar definitions in a top-down fashion/depth first search order
@@ -600,42 +592,55 @@ FieldDecl: Vec<ast::Field> = {
 // 8.3
 // #[inline]
 UnannType: ast::Type = {
-    <ty: UnannTypeWithoutDim> <dims: DimsOpt> => {
-        let mut ty = ty;
-        ty.dims = dims;
-        ty
-    }
+    UnannPrimitiveType,
+    // UnannReferenceType, TODO: add again
+};
+
+// 8.3 ANNO GENE
+#[inline]
+UnannPrimitiveType: ast::Type = {
+    NumericType,
+    Spanned<"boolean"> => ast::Type::without_dims(
+        ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
+    ),
+};
+#[inline] UnannReferenceType = { UnannInterfaceType, UnannClassType, UnannArrayType };
+#[inline] UnannInterfaceType = UnannClassType;
+#[inline] UnannClassType: ast::Type = Path => ast::Type::without_dims(<>);
+UnannArrayType: ast::Type = {
+    <ty: UnannPrimitiveType> <dims: Dims> => {
+        ast::Type {
+            name: ty.name,
+            dims: dims,
+        }
+    },
 };
 
 // ~8.3 GENE, ANNO
-#[inline]
-UnannTypeWithoutDim: ast::Type = {
-    // UnannPrimitiveType >> NumericType
-    NumericType,
-    // Spanned<NumericType> => ast::Type {
-    //     name: ast::Path::single(ast::Ident {
-    //         name: <>.inner.to_string(),
-    //         span: <>.span,
-    //     }),
-    //     dims: 0,
-    // },
-    // UnannPrimitiveType >> "boolean"
-    Spanned<"boolean"> => ast::Type {
-        name: ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into()),
-        dims: 0,
-    },
-    // UnannReferenceType >> UnannClassOrInterfaceType GENE, ANNO
-    Path => ast::Type {
-        name: <>,
-        dims: 0,
-    }
+// #[inline]
+// UnannTypeWithoutDim: ast::Type = {
+//     // UnannPrimitiveType >> NumericType
+//     NumericType,
+//     // Spanned<NumericType> => ast::Type {
+//     //     name: ast::Path::single(ast::Ident {
+//     //         name: <>.inner.to_string(),
+//     //         span: <>.span,
+//     //     }),
+//     //     dims: 0,
+//     // },
+//     // UnannPrimitiveType >> "boolean"
+//     Spanned<"boolean"> => ast::Type::without_dims(
+//         ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
+//     ),
+//     // UnannReferenceType >> UnannClassOrInterfaceType GENE, ANNO
+//     Path => ast::Type::without_dims(<>),
 
-    // UnannReferenceType >> UnannTypeVariable GENE, ANNO
-    // GENE: put this in again
-    // UnannTypeVariable => ast::Type {
-    //     name: <>,
-    // },
-};
+//     // UnannReferenceType >> UnannTypeVariable GENE, ANNO
+//     // GENE: put this in again
+//     // UnannTypeVariable => ast::Type {
+//     //     name: <>,
+//     // },
+// };
 
 // 8.3 GENE
 // UnannTypeVariable = Ident;
@@ -782,13 +787,9 @@ FormalParameter: ast::FormalParameter = {
 #[inline]
 Result = {
     UnannType,
-    Spanned<"void"> => ast::Type {
-        name: ast::Path::single(ast::Ident {
-            name: "void".into(),
-            span: <>.span,
-        }),
-        dims: 0,
-    },
+    Spanned<"void"> => ast::Type::without_dims(
+        ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
+    ),
 };
 
 // 8.4.6 TODO GENE
@@ -1126,22 +1127,13 @@ ClassLiteral: ast::Type = {
     },
     <name: Spanned<"boolean">> <dims: DimsOpt> "." "class" => {
         ast::Type {
-            name: ast::Path::single(ast::Ident {
-                name: unwrap_keyword(&name.inner).into(),
-                span: name.span,
-            }),
+            name: ast::Path::single(name.map(|t| unwrap_keyword(&t)).into()),
             dims: dims,
         }
     },
-    <Spanned<"void">> "." "class" => {
-        ast::Type {
-            name: ast::Path::single(ast::Ident {
-                name: unwrap_keyword(&<>.inner).into(),
-                span: <>.span,
-            }),
-            dims: 0,
-        }
-    },
+    <Spanned<"void">> "." "class" => ast::Type::without_dims(
+        ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
+    ),
 };
 
 // 15.10.3
