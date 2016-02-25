@@ -8,13 +8,13 @@ description = "Java Parser for the xswag system"
 repository = "https://github.com/LukasKalbertodt/xswag-syntax-java"
 license = "MIT"
 
-# [dependencies.xswag-base]
-# git = "https://github.com/LukasKalbertodt/xswag-base"
-# branch = "master"
+[dependencies.xswag-base]
+git = "https://github.com/LukasKalbertodt/xswag-base"
+branch = "master"
 
 [build-dependencies]
-lalrpop = "0.10.0"
+lalrpop = "0.11.0"
 
 [dependencies]
-lalrpop-util = "0.10.0"
-xswag-base = "0.2"
+lalrpop-util = "0.11.0"
+# xswag-base = "0.2"
