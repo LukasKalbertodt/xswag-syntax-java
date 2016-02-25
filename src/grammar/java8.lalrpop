@@ -187,6 +187,20 @@ BinOpLeftAssoc<O, N>: ast::ExprType = {
     BinOp<BinOpLeftAssoc<O, N>, O, N>,
 };
 
+ExprTypeAsStatement<E>: ast::Statement = {
+    Spanned<E> => {
+        ast::Statement {
+            span: <>.span,
+            label: None,
+            stmt: ast::StatementType::Expr(ast::Expr {
+                span: <>.span,
+                expr: <>.inner,
+            })
+        }
+    },
+};
+
+
 // ===========================================================================
 // Helper grammar definitions that are used in several sections
 // ===========================================================================
@@ -919,6 +933,11 @@ StatementExpression: ast::Statement = {
             stmt: ast::StatementType::Expr(<>.into()),
         }
     },
+    ExprTypeAsStatement<PreIncrementExpression>,
+    ExprTypeAsStatement<PreDecrementExpression>,
+    ExprTypeAsStatement<PostIncrementExpression>,
+    ExprTypeAsStatement<PostDecrementExpression>,
+    // ExprTypeAsStatement<MethodInvocation>,
     Spanned<MethodInvocation> => {
         ast::Statement {
             span: <>.span,
@@ -932,6 +951,7 @@ StatementExpression: ast::Statement = {
             })
         }
     },
+    // ClassInstanceCreationExpression
 };
 
 // 14.9
@@ -1131,38 +1151,54 @@ MethodInvocation: (ast::MethodInvocationType, Vec<ast::Expr>) = {
 ArgumentList = Comma<Expression>;
 
 // 15.14
-PostfixExpression: ast::ExprType = {
+PostfixExpression = {
     Primary,
     ExpressionName,
-    <Spanned<PostfixExpression>> "++" => ast::ExprType::UnaryOp {
+    PostIncrementExpression,
+    PostDecrementExpression,
+};
+
+// 15.14.2
+PostIncrementExpression: ast::ExprType = <Spanned<PostfixExpression>> "++" => {
+    ast::ExprType::UnaryOp {
         op: ast::UnaryOpType::PostIncr,
         expr: <>.into(),
-    },
-    <Spanned<PostfixExpression>> "--" => ast::ExprType::UnaryOp {
+    }
+};
+
+// 15.14.3
+PostDecrementExpression: ast::ExprType = <Spanned<PostfixExpression>> "--" => {
+    ast::ExprType::UnaryOp {
         op: ast::UnaryOpType::PostDecr,
         expr: <>.into(),
-    },
+    }
 };
 
 // 15.15 TODO
 UnaryExpression: ast::ExprType = {
-    "++" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
-        op: ast::UnaryOpType::PreIncr,
-        expr: <>.into(),
-    },
-    "--" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
-        op: ast::UnaryOpType::PreDecr,
-        expr: <>.into(),
-    },
-    "+" <Spanned<UnaryExpression>> =>ast::ExprType::UnaryOp {
+    PreIncrementExpression,
+    PreDecrementExpression,
+    "+" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
         op: ast::UnaryOpType::Plus,
         expr: <>.into(),
     },
-    "-" <Spanned<UnaryExpression>> =>ast::ExprType::UnaryOp {
+    "-" <Spanned<UnaryExpression>> => ast::ExprType::UnaryOp {
         op: ast::UnaryOpType::Neg,
         expr: <>.into(),
     },
     UnaryExpressionNotPlusMinus,
+};
+PreIncrementExpression: ast::ExprType = "++" <Spanned<UnaryExpression>> => {
+    ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::PreIncr,
+        expr: <>.into(),
+    }
+};
+PreDecrementExpression: ast::ExprType = "--" <Spanned<UnaryExpression>> => {
+    ast::ExprType::UnaryOp {
+        op: ast::UnaryOpType::PreDecr,
+        expr: <>.into(),
+    }
 };
 UnaryExpressionNotPlusMinus: ast::ExprType = {
     PostfixExpression,
