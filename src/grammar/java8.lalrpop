@@ -1144,7 +1144,7 @@ ClassOrInterfaceTypeToInstantiate = {
 
 // 15.10.1 TODO ANNO
 ArrayCreationExpression: ast::ExprType = {
-    "new" <ty: PrimitiveType> <expr_dims: DimExpr+> <empty_dims: DimsOpt> => {
+    "new" <ty: ArrayCreationType> <expr_dims: DimExpr+> <empty_dims: DimsOpt> => {
         ast::ExprType::ArrayCreation {
             ty: ty,
             expr_dims: expr_dims,
@@ -1152,7 +1152,7 @@ ArrayCreationExpression: ast::ExprType = {
             init: None,
         }
     },
-    "new" <ty: PrimitiveType> <dims: Dims> <init: Spanned<ArrayInitializer>> => {
+    "new" <ty: ArrayCreationType> <dims: Dims> <init: Spanned<ArrayInitializer>> => {
         ast::ExprType::ArrayCreation {
             ty: ty,
             expr_dims: Vec::new(),
@@ -1161,6 +1161,7 @@ ArrayCreationExpression: ast::ExprType = {
         }
     },
 };
+ArrayCreationType = { PrimitiveType, ClassType };
 DimExpr = "[" <Expression> "]";
 
 
