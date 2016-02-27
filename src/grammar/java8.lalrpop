@@ -1078,7 +1078,7 @@ PrimaryNoNewArray: ast::ExprType = {
     "this" => ast::ExprType::This,
     // TypeName . this
     "(" <Expression> ")" => <>.expr,
-    // ClassInstanceCreationExpression
+    ClassInstanceCreationExpression,
     FieldAccess => ast::ExprType::FieldAccess {
         root: <>.0,
         path: <>.1,
@@ -1114,6 +1114,26 @@ ClassLiteral: ast::Type = {
     <Spanned<"void">> "." "class" => ast::Type::without_dims(
         ast::Path::single(<>.map(|t| unwrap_keyword(&t)).into())
     ),
+};
+
+// 15.9 GENE ANNO TODO
+ClassInstanceCreationExpression = {
+    UnqualifiedClassInstanceCreationExpression,
+};
+UnqualifiedClassInstanceCreationExpression: ast::ExprType = {
+    "new" <name: ClassOrInterfaceTypeToInstantiate>
+        "(" <args: ArgumentList?> ")"
+        <body: ClassBody> =>
+    {
+        ast::ExprType::InstanceCreation {
+            name: name,
+            args: args.unwrap_or_default(),
+            body: body,
+        }
+    }
+};
+ClassOrInterfaceTypeToInstantiate = {
+    Path,
 };
 
 // 15.10.3

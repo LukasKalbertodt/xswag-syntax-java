@@ -8,6 +8,7 @@ pub use super::{
     Import,
     Type,
     Dims,
+    ClassMember,
 };
 use base::code::Span;
 use lex;
@@ -119,6 +120,11 @@ pub enum ExprType {
         ty: Type,
         expr: Box<Expr>,
     },
+    InstanceCreation {
+        name: Path,
+        args: Vec<Expr>,
+        body: Vec<ClassMember>,
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
