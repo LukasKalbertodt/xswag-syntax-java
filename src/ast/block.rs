@@ -51,6 +51,11 @@ pub enum StatementType {
         cond: Expr,
         body: Box<Statement>,
     },
+    Switch {
+        val: Expr,
+        arms: Vec<SwitchArm>,
+        empty_arms: Vec<SwitchLabel>,
+    },
     DoWhile {
         cond: Expr,
         body: Box<Statement>,
@@ -65,6 +70,19 @@ pub enum StatementType {
     Continue(Option<Ident>),
     Return(Option<Expr>),
     Throw(Expr),
+}
+
+#[derive(Clone, Debug)]
+pub struct SwitchArm {
+    pub labels: Vec<SwitchLabel>,
+    pub block: BlockStatement,
+}
+
+#[derive(Clone, Debug)]
+pub enum SwitchLabel {
+    Expr(Expr),
+    Name(Ident),
+    Default,
 }
 
 #[derive(Clone, Debug)]
@@ -124,7 +142,7 @@ pub enum ExprType {
     InstanceCreation {
         name: Path,
         args: Vec<Expr>,
-        body: Vec<ClassMember>,
+        body: Option<Vec<ClassMember>>,
     },
     ArrayCreation {
         ty: Type,

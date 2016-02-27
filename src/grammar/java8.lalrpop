@@ -867,7 +867,13 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
     EmptyStatement,
     ExpressionStatement,
     // AssertStatement,
-    // SwitchStatement,
+    Spanned<SwitchStatement> => {
+        ast::Statement {
+            label: None,
+            stmt: <>.inner,
+            span: <>. span,
+        }
+    },
     <l: @L> "do" <body: Statement> "while" "(" <cond: Expression> ")" ";" <r: @R> => {
         ast::Statement {
             label: None,
@@ -1005,6 +1011,30 @@ IfThenElseStatementNoShortIf: ast::StatementType = {
     }
 };
 
+// 14.11
+SwitchStatement: ast::StatementType = {
+    "switch" "(" <val: Expression> ")"
+        "{" <arms: SwitchArm*> <empty_arms: SwitchLabel*> "}" =>
+    {
+        ast::StatementType::Switch {
+            val: val,
+            arms: arms,
+            empty_arms: empty_arms,
+        }
+    }
+};
+SwitchArm: ast::SwitchArm = <labels: SwitchLabel*> <block: BlockStatement> => {
+    ast::SwitchArm {
+        labels: labels,
+        block: block,
+    }
+};
+SwitchLabel: ast::SwitchLabel = {
+    "default" ":" => ast::SwitchLabel::Default,
+    // "case" <Ident> ":" => ast::SwitchLabel::Name(<>),
+    "case" <Expression> ":" => ast::SwitchLabel::Expr(<>),
+};
+
 // 14.12
 WhileStatement: ast::StatementType = {
     "while" "(" <cond: Expression> ")" <body: Statement> => {
@@ -1135,7 +1165,7 @@ ClassInstanceCreationExpression = {
 UnqualifiedClassInstanceCreationExpression: ast::ExprType = {
     "new" <name: ClassOrInterfaceTypeToInstantiate>
         "(" <args: ArgumentList?> ")"
-        <body: ClassBody> =>
+        <body: ClassBody?> =>
     {
         ast::ExprType::InstanceCreation {
             name: name,

@@ -30,6 +30,8 @@ pub use self::block::{
     MethodInvocationType,
     ForInit,
     VariableDeclarator,
+    SwitchArm,
+    SwitchLabel,
 };
 
 use std::fmt::{Display, Formatter, Error};
