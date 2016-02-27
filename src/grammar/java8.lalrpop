@@ -1087,6 +1087,17 @@ PrimaryNoNewArray: ast::ExprType = {
         args: <>.1,
     },
     // MethodReference,
+
+    // Spanned<Assignment> =>? {
+    //     let rep = Report::simple_error(
+    //         format!(),
+    //         dims.span,
+    //     );
+
+    //     Err(ParseError::User {
+    //         error:
+    //     })
+    // }
 };
 
 // 15.8.2
@@ -1138,6 +1149,15 @@ ArrayCreationExpression: ast::ExprType = {
             ty: ty,
             expr_dims: expr_dims,
             empty_dims: empty_dims,
+            init: None,
+        }
+    },
+    "new" <ty: PrimitiveType> <dims: Dims> <init: Spanned<ArrayInitializer>> => {
+        ast::ExprType::ArrayCreation {
+            ty: ty,
+            expr_dims: Vec::new(),
+            empty_dims: dims,
+            init: Some(init.into()),
         }
     },
 };

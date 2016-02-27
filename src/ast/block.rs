@@ -129,6 +129,7 @@ pub enum ExprType {
         ty: Type,
         expr_dims: Vec<Expr>,
         empty_dims: Dims,
+        init: Option<Box<Expr>>,
     },
 }
 

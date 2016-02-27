@@ -14,6 +14,9 @@ import AlgoTools.IO;
 
 public class HelloWorld {
     public static void main(String[] args) {
+
+        int x = new int[] {3, 4};
+
         while (3 % 2 == 0)
             IO.println("Hello World :)");
 
