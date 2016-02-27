@@ -15,6 +15,7 @@ use lex::{self, Token, Keyword};
 use base::code::{BytePos, Span};
 use base::diag::Report;
 use lalrpop_util::ParseError;
+use std::iter;
 use super::{
     check_allowed_modifier,
     get_abstract,
@@ -1070,7 +1071,7 @@ Expression: ast::Expr = {
 // 15.8 TODO
 Primary = {
     PrimaryNoNewArray,
-    // ArrayCreationExpression,
+    ArrayCreationExpression,
 };
 PrimaryNoNewArray: ast::ExprType = {
     Literal => ast::ExprType::Literal(<>),
@@ -1135,6 +1136,19 @@ UnqualifiedClassInstanceCreationExpression: ast::ExprType = {
 ClassOrInterfaceTypeToInstantiate = {
     Path,
 };
+
+// 15.10.1 TODO ANNO
+ArrayCreationExpression: ast::ExprType = {
+    "new" <ty: PrimitiveType> <expr_dims: DimExpr+> <empty_dims: DimsOpt> => {
+        ast::ExprType::ArrayCreation {
+            ty: ty,
+            expr_dims: expr_dims,
+            empty_dims: empty_dims,
+        }
+    },
+};
+DimExpr = "[" <Expression> "]";
+
 
 // 15.10.3
 ArrayAccess: (ast::Expr, ast::Expr) = {

@@ -124,7 +124,12 @@ pub enum ExprType {
         name: Path,
         args: Vec<Expr>,
         body: Vec<ClassMember>,
-    }
+    },
+    ArrayCreation {
+        ty: Type,
+        expr_dims: Vec<Expr>,
+        empty_dims: Dims,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
