@@ -898,10 +898,16 @@ StatementWithoutTrailingSubstatement: ast::Statement = {
             stmt: ast::StatementType::Return(expr),
             span: Span::new(l, r),
         }
-    }
+    },
     // ReturnStatement,
     // SynchronizedStatement,
-    // ThrowStatement,
+    <l: @L> "throw" <expr: Expression> ";" <r: @R> => {
+        ast::Statement {
+            label: None,
+            stmt: ast::StatementType::Throw(expr),
+            span: Span::new(l, r),
+        }
+    },
     // TryStatement,
 };
 
