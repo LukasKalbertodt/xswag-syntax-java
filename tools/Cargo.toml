@@ -1,0 +1,20 @@
+[package]
+name = "xswag-syntax-java-tools"
+version = "0.1.0"
+authors = ["Lukas Kalbertodt <lukas.kalbertodt@gmail.com>"]
+
+[[bin]]
+name = "token-dump"
+path = "src/token-dump.rs"
+
+[dependencies]
+term-painter = "0.2"
+docopt = "0.6"
+rustc-serialize = "0.3"
+
+[dependencies.xswag-syntax-java]
+path = ".."
+
+[dependencies.xswag-base]
+git = "https://github.com/LukasKalbertodt/xswag-base"
+branch = "master"
