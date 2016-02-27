@@ -1080,14 +1080,8 @@ PrimaryNoNewArray: ast::ExprType = {
     // TypeName . this
     "(" <Expression> ")" => <>.expr,
     ClassInstanceCreationExpression,
-    FieldAccess => ast::ExprType::FieldAccess {
-        root: <>.0,
-        path: <>.1,
-    },
-    ArrayAccess => ast::ExprType::ArrayAccess {
-        obj: Box::new(<>.0),
-        idx: Box::new(<>.1),
-    },
+    FieldAccess,
+    ArrayAccess,
     MethodInvocation => ast::ExprType::MethodInvocation {
         name: <>.0,
         args: <>.1,
@@ -1151,13 +1145,29 @@ DimExpr = "[" <Expression> "]";
 
 
 // 15.10.3
-ArrayAccess: (ast::Expr, ast::Expr) = {
-    <lhs: Spanned<ExpressionName>> "[" <idx: Expression> "]" => (lhs.into(), idx),
-    <lhs: Spanned<PrimaryNoNewArray>> "[" <idx: Expression> "]" => (lhs.into(), idx),
+ArrayAccess: ast::ExprType = {
+    <lhs: Spanned<ExpressionName>> "[" <idx: Expression> "]" => {
+        ast::ExprType::ArrayAccess {
+            obj: Box::new(lhs.into()),
+            idx: Box::new(idx),
+        }
+    },
+    <lhs: Spanned<PrimaryNoNewArray>> "[" <idx: Expression> "]" => {
+        ast::ExprType::ArrayAccess {
+            obj: Box::new(lhs.into()),
+            idx: Box::new(idx),
+        }
+    },
 };
 
 // 15.11
-FieldAccess: (Option<Box<ast::Expr>>, ast::Path) = {
+FieldAccess: ast::ExprType = FieldAccessImpl => {
+    ast::ExprType::FieldAccess {
+        root: <>.0,
+        path: <>.1,
+    }
+};
+FieldAccessImpl: (Option<Box<ast::Expr>>, ast::Path) = {
     <r: Spanned<Primary>> "." <p: Ident> => {
         (Some(Box::new(r.into())), ast::Path::single(p))
     },
@@ -1351,6 +1361,8 @@ Assignment: ast::ExprType = {
 };
 LeftHandSide = {
     ExpressionName,
+    ArrayAccess,
+    FieldAccess,
 };
 AssignmentOperator = {
     "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", ">>>=", "&=", "^=", "|="
