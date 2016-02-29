@@ -434,3 +434,27 @@ fn basic_spans() {
         }
     ]);
 }
+
+#[test]
+fn line_breaks() {
+    use base::code::LineIdx;
+    let src = "foo\nbar\r\nbaz";
+    //         012334567788901
+    let fmap = Rc::new(FileMap::new("<unit-test>", src));
+    let mut lexer = Tokenizer::new(&fmap);
+
+    // run through all token
+    lexer.last();
+
+    assert_eq!(fmap.get_line_start(LineIdx(0)), Some(BytePos(0)));
+    assert_eq!(fmap.get_line_start(LineIdx(1)), Some(BytePos(4)));
+    assert_eq!(fmap.get_line_start(LineIdx(2)), Some(BytePos(9)));
+
+    assert_eq!(fmap.get_line_idx(BytePos(2)), LineIdx(0));
+    assert_eq!(fmap.get_line_idx(BytePos(3)), LineIdx(0));
+    assert_eq!(fmap.get_line_idx(BytePos(4)), LineIdx(1));
+    assert_eq!(fmap.get_line_idx(BytePos(6)), LineIdx(1));
+    assert_eq!(fmap.get_line_idx(BytePos(7)), LineIdx(1));
+    assert_eq!(fmap.get_line_idx(BytePos(8)), LineIdx(1));
+    assert_eq!(fmap.get_line_idx(BytePos(9)), LineIdx(2));
+}

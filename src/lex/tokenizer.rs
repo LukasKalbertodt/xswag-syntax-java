@@ -386,9 +386,15 @@ impl<'a> Tokenizer<'a> {
         // Check if the current char is a line break and add to line break list
         // Division into lines specified in section 3.4
         if self.curr == Some('\r')
-            || (self.curr == Some('\n') && self.last != Some('\r')) {
+            || (self.curr == Some('\n') && self.last != Some('\r'))
+        {
             // we add the offset of the first char in the new line
-            self.fmap.add_line(self.peek_pos);
+            // if it's a CR LF linebreak, the line starts one byte later
+            self.fmap.add_line(self.peek_pos + if self.peek == Some('\n') {
+                BytePos(1)
+            } else {
+                BytePos(0)
+            });
         }
 
         // Check for unicode escape. More information in section 3.3
