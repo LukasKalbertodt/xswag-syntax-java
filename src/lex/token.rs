@@ -44,7 +44,7 @@ macro_rules! gen_enum {
 macro_rules! to_java_string {
     ($name:ident; $($variant:ident = $val:expr),+) => {
         impl $name {
-            pub fn as_java_string(&self) -> &'static str {
+            pub fn as_java_string(&self) -> &str {
                 match self {
                     $( &$name::$variant => $val ,)*
                 }
@@ -203,15 +203,15 @@ impl Token {
     /// ```
     /// Excpected one of `,` `;` `)`
     /// ```
-    pub fn as_java_string(&self) -> &'static str {
+    pub fn as_java_string(&self) -> &str {
         use self::Token::*;
-        match self.clone() {
+        match *self {
             Whitespace => "whitespace",
             Comment => "comment",
 
             Ident(_) => "identifier",
-            KeyW(keyword) => keyword.as_java_string(),
-            Literal(..) => "Lit(???)",
+            KeyW(ref keyword) => keyword.as_java_string(),
+            Literal(ref lit) => lit.as_java_string(),
 
             ParenOp => "(",
             ParenCl => ")",
@@ -367,4 +367,21 @@ pub enum Lit {
     Null,
     /// Boolean literal `true` or `false`
     Bool(bool),
+}
+
+impl Lit {
+    /// String for error reporting. Example:
+    /// ```
+    /// Excpected one of `,` `;` `)`
+    /// ```
+    pub fn as_java_string(&self) -> &str {
+        match *self {
+            Lit::Str(_) => "string literal",
+            Lit::Char(_) => "character literal",
+            Lit::Integer { .. } => "integer literal",
+            Lit::Float { .. } => "floating point literal",
+            Lit::Null => "null literal",
+            Lit::Bool(_) => "boolean literal",
+        }
+    }
 }
