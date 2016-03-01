@@ -153,6 +153,7 @@ pub struct Method {
     pub synchronized: bool,
     pub default: bool,
     pub params: Vec<FormalParameter>,
+    pub throws: Vec<Type>,
     pub block: Option<Block>,
 }
 

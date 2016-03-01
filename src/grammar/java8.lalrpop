@@ -484,7 +484,7 @@ InterfaceMethodDecl: ast::Method = {
             [Public, Abstract, Default, Static, Strictfp]
         );
 
-        let (ret_ty, name, params) = header;
+        let (ret_ty, name, params, throws) = header;
 
         let is_static = get_static(&mods);
         let is_default = get_default(&mods);
@@ -507,6 +507,7 @@ InterfaceMethodDecl: ast::Method = {
             synchronized: false,
             default: is_default.is_some(),
             params: params,
+            throws: throws,
             block: body,
         }
     }
@@ -658,7 +659,7 @@ MethodDecl: ast::Method = {
             [Public, Protected, Private, Abstract, Static, Final, Synchronized, Native, Strictfp]
         );
 
-        let (ret_ty, name, params) = header;
+        let (ret_ty, name, params, throws) = header;
 
         let is_static = get_static(&mods);
         let is_final = get_final(&mods);
@@ -721,18 +722,19 @@ MethodDecl: ast::Method = {
             synchronized: is_syncronized.is_some(),
             default: false,
             params: params,
+            throws: throws,
             block: body.inner,
         }
     }
 };
 
 // 8.4 GENE ANNO
-MethodHeader: (ast::Type, ast::Ident, Vec<ast::FormalParameter>) = {
+MethodHeader: (ast::Type, ast::Ident, Vec<ast::FormalParameter>, Vec<ast::Type>) = {
     <ret: Result> <decl: MethodDeclarator> <throws: Throws?> => {
         let mut ret_ty = ret;
         ret_ty.dims += decl.2;
 
-        (ret_ty, decl.0, decl.1.unwrap_or(vec![]))
+        (ret_ty, decl.0, decl.1.unwrap_or_default(), throws.unwrap_or_default())
     }
 };
 
@@ -770,8 +772,9 @@ Result = {
     ),
 };
 
-// 8.4.6 TODO GENE
-Throws = "throws";
+// 8.4.6 GENE
+Throws = "throws" <Comma<ExceptionType>>;
+ExceptionType = ClassType;
 
 // 8.4.7 TODO
 MethodBody: Option<ast::Block> = {

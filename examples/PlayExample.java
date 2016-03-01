@@ -13,7 +13,7 @@
 import AlgoTools.IO;
 
 public class HelloWorld {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Peter {
 
         int arr = new int[] {3, 4};
 
@@ -26,4 +26,4 @@ public class HelloWorld {
             IO.println("Count: " + i);
         }
     }
-} /* the end
+}
