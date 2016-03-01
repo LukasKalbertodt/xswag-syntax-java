@@ -458,3 +458,35 @@ fn line_breaks() {
     assert_eq!(fmap.get_line_idx(BytePos(8)), LineIdx(1));
     assert_eq!(fmap.get_line_idx(BytePos(9)), LineIdx(2));
 }
+
+#[test]
+fn line_breaks_successive() {
+    use base::code::LineIdx;
+    //         v  v v v v   v   v         (first char of line)
+    let src = "f\n\n\r\r\r\n\r\nb";
+    //         011223344556677889
+    let fmap = Rc::new(FileMap::new("<unit-test>", src));
+    let mut lexer = Tokenizer::new(&fmap);
+
+    // run through all token
+    lexer.last();
+
+    assert_eq!(fmap.get_line_start(LineIdx(0)), Some(BytePos(0)));
+    assert_eq!(fmap.get_line_start(LineIdx(1)), Some(BytePos(2)));
+    assert_eq!(fmap.get_line_start(LineIdx(2)), Some(BytePos(3)));
+    assert_eq!(fmap.get_line_start(LineIdx(3)), Some(BytePos(4)));
+    assert_eq!(fmap.get_line_start(LineIdx(4)), Some(BytePos(5)));
+    assert_eq!(fmap.get_line_start(LineIdx(5)), Some(BytePos(7)));
+    assert_eq!(fmap.get_line_start(LineIdx(6)), Some(BytePos(9)));
+
+    assert_eq!(fmap.get_line_idx(BytePos(0)), LineIdx(0));
+    assert_eq!(fmap.get_line_idx(BytePos(1)), LineIdx(0));
+    assert_eq!(fmap.get_line_idx(BytePos(2)), LineIdx(1));
+    assert_eq!(fmap.get_line_idx(BytePos(3)), LineIdx(2));
+    assert_eq!(fmap.get_line_idx(BytePos(4)), LineIdx(3));
+    assert_eq!(fmap.get_line_idx(BytePos(5)), LineIdx(4));
+    assert_eq!(fmap.get_line_idx(BytePos(6)), LineIdx(4));
+    assert_eq!(fmap.get_line_idx(BytePos(7)), LineIdx(5));
+    assert_eq!(fmap.get_line_idx(BytePos(8)), LineIdx(5));
+    assert_eq!(fmap.get_line_idx(BytePos(9)), LineIdx(6));
+}
