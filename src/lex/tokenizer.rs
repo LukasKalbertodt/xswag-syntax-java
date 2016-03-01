@@ -533,6 +533,8 @@ impl<'a> Tokenizer<'a> {
     fn skip_comment(&mut self) -> Option<diag::Report> {
         // Note: `self.peek.is_some()` implies `self.curr.is_some()`
         if self.peek == Some('*') {
+            // Skip "/*". Otherwise "/*/" would be lexed as a comment
+            self.dbump();
             // Skip everything until the end of file or a "*/" is reached.
             loop {
                 match (self.curr, self.peek) {

@@ -490,3 +490,10 @@ fn line_breaks_successive() {
     assert_eq!(fmap.get_line_idx(BytePos(8)), LineIdx(5));
     assert_eq!(fmap.get_line_idx(BytePos(9)), LineIdx(6));
 }
+
+#[test]
+fn comments() {
+    let mut ra = raw_toks("/*/");
+    assert_eq!(ra.len(), 1);
+    assert!(ra.remove(0).is_err());
+}
