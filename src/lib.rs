@@ -21,7 +21,7 @@ pub fn parse_compilation_unit(file: &FileMap)
 {
     // Save all tokens that have been read already
     let tokens = RefCell::new(Vec::new());
-    let mut lexing_err = RefCell::new(None);
+    let lexing_err = RefCell::new(None);
 
     // Stop at the first lexing error and remove all non real token for parsing
     let lexer = lex::Tokenizer::new(file)
@@ -103,12 +103,20 @@ fn handle_unexpected_token(
     }
 
     // pack as `Report`
-    let msg = format!(
-        "unexpected token '{}' (`{}`). Expected one of {:?}",
-        tok_name,
-        tok_str,
-        expected,
-    );
+    let msg = if tok_name == tok_str {
+        format!(
+            "unexpected '{}'. Expected one of {:?}",
+            tok_name,
+            expected,
+        )
+    } else {
+        format!(
+            "unexpected token '{}' (`{}`). Expected one of {:?}",
+            tok_name,
+            tok_str,
+            expected,
+        )
+    };
     let rep = Report::simple_error(msg, span);
 
     // ------ Check if we can give the user some more useful information ------
