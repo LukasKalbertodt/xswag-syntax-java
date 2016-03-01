@@ -909,7 +909,7 @@ impl<'a> Tokenizer<'a> {
         // Prepare report for reporting possible radix errors
         let mut rep = diag::Report {
             kind: diag::ReportKind::Error,
-            span: Span::dummy(),
+            span: None,
             remarks: vec![],
         };
 
@@ -939,6 +939,13 @@ impl<'a> Tokenizer<'a> {
             }
         }
         if rep.remarks.len() > 0 {
+            // Set span for main "Report"
+            // We can unwrap everywhere, because the span is always set and we
+            // know that we have at least one remark.
+            let lo = rep.remarks.iter().map(|rem| rem.span.unwrap().lo).min();
+            let hi = rep.remarks.iter().map(|rem| rem.span.unwrap().lo).min();
+            rep.span = Some(Span::new(lo.unwrap(), hi.unwrap()));
+
             Err(Error {
                 report: rep,
                 poison: None,

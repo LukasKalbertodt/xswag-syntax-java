@@ -48,9 +48,9 @@ pub fn parse_compilation_unit(file: &FileMap)
         ParseError::UnrecognizedToken { token, expected } => {
             match token {
                 None => {
-                    Report::simple_error(
-                        "lalrpop UnrecognizedToken ???",
-                        Span::dummy()
+                    Report::simple_spanless_error(
+                        "Unexpected end of file (EOF) while parsing. Maybe you \
+                            forgot to close a parentheses or brace?",
                     )
                 },
                 Some((lo, tok, hi)) => {
