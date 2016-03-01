@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate log;
 extern crate xswag_base as base;
 extern crate lalrpop_util;
 
@@ -15,14 +17,21 @@ const MAX_PREVIEW_LEN: usize = 15;
 
 
 pub fn parse_compilation_unit(file: &FileMap)
-    -> (Result<ast::CompilationUnit, Report>, Vec<Report>)
+    -> (Option<ast::CompilationUnit>, Vec<Report>)
 {
     // Save all tokens that have been read already
     let tokens = RefCell::new(Vec::new());
+    let mut lexing_err = RefCell::new(None);
 
     // Stop at the first lexing error and remove all non real token for parsing
     let lexer = lex::Tokenizer::new(file)
-        .take_while(|res| res.is_ok())
+        .take_while(|res| match res {
+            &Ok(_) => true,
+            &Err(ref e) => {
+                *lexing_err.borrow_mut() = Some(e.clone());
+                false
+            }
+        })
         .map(Result::unwrap)
         .inspect(|t| tokens.borrow_mut().push(t.clone()))
         .map(|ts| { (ts.span.lo, ts.tok, ts.span.hi) })
@@ -62,7 +71,17 @@ pub fn parse_compilation_unit(file: &FileMap)
             )
         },
     });
-    (res, errors)
+
+    let mut reps = Vec::new();
+    let ast = if let Some(ref lexing_err) = *lexing_err.borrow() {
+        reps.push(lexing_err.report.clone());
+        None
+    } else {
+        res.map(|ast| Some(ast)).unwrap_or_else(|e| { reps.push(e); None })
+    };
+
+    reps.extend_from_slice(&errors);
+    (ast, reps)
 }
 
 fn handle_unexpected_token(

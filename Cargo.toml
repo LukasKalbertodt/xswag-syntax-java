@@ -17,6 +17,7 @@ lalrpop = "0.11.0"
 
 [dependencies]
 lalrpop-util = "0.11.0"
+log = "0.3"
 # xswag-base = "0.2"
 
 [dev-dependencies]

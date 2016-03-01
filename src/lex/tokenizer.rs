@@ -172,14 +172,20 @@ impl<'a> Tokenizer<'a> {
     /// are only recovered/poisened.
     pub fn next_token(&mut self) -> Option<Result<TokenSpan, TokenSpan>> {
         let res = self.next_token_inner();
-        match self.bump_err.take() {
+        let out = match self.bump_err.take() {
             None => res,
             Some(rep) => Some(Err(Error {
                 report: rep,
                 poison: res.and_then(|r| r.map(|o| Some(o))
                                           .unwrap_or_else(|e| e.poison))
             }))
+        };
+
+        match out {
+            Some(ref r) => trace!("Produced Token: {:?}", r),
+            None => trace!("Produced None token!"),
         }
+        out
     }
 
     // =======================================================================

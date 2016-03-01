@@ -15,12 +15,9 @@ import AlgoTools.IO;
 public class HelloWorld {
     public static void main(String[] args) {
 
-        int arr = new int[] {3, 4}
+        int arr = new int[] {3, 4};
 
         arr[1] = 27;
-        if (true) {
-            class
-        }
 
         while (3 % 2 == 0)
             IO.println("Hello World :)");
@@ -29,4 +26,4 @@ public class HelloWorld {
             IO.println("Count: " + i);
         }
     }
-}
+} /* the end
