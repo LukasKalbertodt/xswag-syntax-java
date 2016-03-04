@@ -7,7 +7,7 @@ pub mod lex;
 pub mod ast;
 pub mod grammar;
 
-use base::diag::Report;
+use base::diag::{Remark, Report, Snippet};
 use base::code::{BytePos, FileMap, Span};
 use lalrpop_util::ParseError;
 use lex::{Token, TokenSpan};
@@ -146,10 +146,13 @@ fn handle_unexpected_token(
 
     if is_line_start && is_good == Some(false) {
         // we can safely unwrap here: `is_good.is_some()` => `prev.is_some()`
-        rep.with_span_note(
+        rep.with_remark(Remark::note(
             "maybe you forgot a semicolon (`;`) at the end of this line?",
-            Span::single(prev.unwrap().span.hi - BytePos(1)),
-        )
+            Snippet::Replace {
+                span: Span::empty_at(prev.unwrap().span.hi),
+                with: ";".into(),
+            },
+        ))
     } else {
         rep.with_note("this is a syntax error. Make sure all \
             parentheses are balanced and nothing is missing.")

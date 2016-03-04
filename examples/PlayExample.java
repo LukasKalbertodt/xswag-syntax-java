@@ -17,7 +17,7 @@ public class HelloWorld {
 
         int arr = new int[] {3, 4};
 
-        arr[1] = 27;
+        arr[1] = 27
 
         while (3 % 2 == 0)
             IO.println("Hello World :)");

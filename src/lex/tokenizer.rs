@@ -925,12 +925,10 @@ impl<'a> Tokenizer<'a> {
                     // check if the digit is valid in the given radix
                     // TODO: Maybe stop lexing here
                     if c.to_digit(radix).is_none() {
-                        rep.remarks.push(diag::Remark {
-                            kind: diag::RemarkKind::Error,
-                            desc: format!("Invalid digit for base{} literal",
-                                          radix),
-                            span: Some(Span::single(self.curr_pos)),
-                        });
+                        rep.remarks.push(diag::Remark::error(
+                            format!("Invalid digit for base{} literal", radix),
+                            diag::Snippet::Orig(Span::single(self.curr_pos)),
+                        ));
                     }
                     s.push(c);
                     self.bump();
@@ -942,8 +940,12 @@ impl<'a> Tokenizer<'a> {
             // Set span for main "Report"
             // We can unwrap everywhere, because the span is always set and we
             // know that we have at least one remark.
-            let lo = rep.remarks.iter().map(|rem| rem.span.unwrap().lo).min();
-            let hi = rep.remarks.iter().map(|rem| rem.span.unwrap().lo).min();
+            let lo = rep.remarks.iter().map(|rem|
+                rem.snippet.span().unwrap().lo
+            ).min();
+            let hi = rep.remarks.iter().map(|rem|
+                rem.snippet.span().unwrap().hi
+            ).min();
             rep.span = Some(Span::new(lo.unwrap(), hi.unwrap()));
 
             Err(Error {
