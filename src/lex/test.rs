@@ -323,7 +323,7 @@ fn unicode_escapes() {
     }));
     assert_eq!(a.report, diag::Report {
         kind: diag::ReportKind::Error,
-        span: Span::new(BytePos(1), BytePos(5)),
+        span: Some(Span::new(BytePos(1), BytePos(5))),
         remarks: a.report.remarks.clone(), // don't care about messages
     });
 
@@ -337,7 +337,7 @@ fn unicode_escapes() {
     }));
     assert_eq!(a.report, diag::Report {
         kind: diag::ReportKind::Error,
-        span: Span::new(BytePos(1), BytePos(7)),
+        span: Some(Span::new(BytePos(1), BytePos(7))),
         remarks: a.report.remarks.clone(), // don't care about messages
     });
 
