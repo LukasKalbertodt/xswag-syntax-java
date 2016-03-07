@@ -12,6 +12,7 @@ use base::code::{BytePos, FileMap, Span};
 use lalrpop_util::ParseError;
 use lex::{Token, TokenSpan};
 use std::cell::RefCell;
+use ast::ItemExt;
 
 const MAX_PREVIEW_LEN: usize = 15;
 
@@ -79,6 +80,28 @@ pub fn parse_compilation_unit(file: &FileMap)
     } else {
         res.map(|ast| Some(ast)).unwrap_or_else(|e| { reps.push(e); None })
     };
+
+    if let Some(ref ast) = ast {
+        let fname = file.filename()
+            .trim_right_matches(".java")
+            .trim_right_matches(".jav");
+        let wrong_types = ast.types
+            .iter()
+            .filter(|ty| ty.vis() == ast::Visibility::Public)
+            .filter_map(|ty| ty.ident())
+            .filter(|&ident| ident.name != fname);
+        for &ast::Ident { ref name, span } in wrong_types {
+            let msg = format!(
+                "a public type called '{}' should be declared in a file \
+                    called '{}.java'. Either rename your file appropriately \
+                    or rename the type to '{}'",
+                name,
+                name,
+                fname
+            );
+            reps.push(Report::simple_error(msg, span));
+        }
+    }
 
     reps.extend_from_slice(&errors);
     (ast, reps)
