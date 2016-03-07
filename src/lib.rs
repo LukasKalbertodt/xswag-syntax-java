@@ -126,20 +126,16 @@ fn handle_unexpected_token(
     }
 
     // pack as `Report`
-    let msg = if tok_name == tok_str {
-        format!(
-            "unexpected '{}'. Expected one of {:?}",
-            tok_name,
-            expected,
-        )
-    } else {
-        format!(
-            "unexpected token '{}' (`{}`). Expected one of {:?}",
-            tok_name,
-            tok_str,
-            expected,
-        )
-    };
+    let mut msg = format!("unexpected '{}'", tok_name);
+    if tok_name != tok_str {
+        msg.push_str(&format!(" (`{}`)", tok_str));
+    }
+    if expected.len() == 1 {
+        msg.push_str(&format!(". Expected `{}`", expected[0]));
+    } else if expected.len() > 1 {
+        msg.push_str(&format!(". Expected one of {:?}", expected));
+    }
+
     let rep = Report::simple_error(msg, span);
 
     // ------ Check if we can give the user some more useful information ------

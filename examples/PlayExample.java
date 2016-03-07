@@ -14,16 +14,9 @@ import AlgoTools.IO;
 
 public class HelloWorld {
     public static void main(String[] args) throws Peter {
-
-        int arr = new int[] {3, 4};
-
-        arr[1] = 27
-
-        while (3 % 2 == 0)
-            IO.println("Hello World :)");
-
-        for (int i = 4; i < 4; i++) {
-            IO.println("Count: " + i);
+        int x = 0;
+        while (x < 10) {
+            x++;
         }
     }
 }
